@@ -77,7 +77,8 @@ default = "internal-qwen"
 stream_tool_calls = true
 temperature = 0.7
 top_p = 0.95
-max_completion_tokens = 8192
+max_completion_tokens = 32768
+max_tokens = 32768
 
 [model.internal-qwen]
 model = "${DEFAULT_MODEL_NAME}"

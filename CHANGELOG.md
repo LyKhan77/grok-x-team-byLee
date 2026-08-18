@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Token Output Limit Truncation Fix:** Meningkatkan `max_completion_tokens` dan `max_tokens` dari `8192` menjadi `32768` pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` untuk mendukung generasi kode berskala besar (misal game 3D / arsitektur kompleks) tanpa terpotong (*Response truncated*).
+- **Modular Generation Rule:** Menambahkan prinsip *Modular Tool-First Generation* pada `.agents/rules/00-project-context.md` agar agent menulis kode modular bertahap langsung ke file.
+
 ---
 
 ## [1.0.0-phase5] - 2026-08-18

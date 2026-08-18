@@ -9,4 +9,5 @@
 ## Core Engineering Principles
 1. **YAGNI & Minimal Complexity:** Never introduce speculative abstractions or unneeded dependencies. Standard library and native constructs come first.
 2. **Deterministic & Isolated Architecture:** Clear modular boundaries with single responsibilities per module.
-3. **Continuous Changelog:** Every meaningful modification to the codebase must be recorded in `CHANGELOG.md`.
+3. **Modular Tool-First Generation:** For complex projects (such as games, complex algorithms, or multi-file services), write code incrementally directly to separate modular files using tool calls (`file_write` / `file_edit`) rather than generating thousands of lines in a single response block.
+4. **Continuous Changelog:** Every meaningful modification to the codebase must be recorded in `CHANGELOG.md`.
