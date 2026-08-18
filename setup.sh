@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Setup Script: Internal Grok Coding Agent for Team
+# Setup Script: Internal Grok Coding Agent for Team (5 Developers & Long-Task Ready)
 # Repository: https://github.com/LyKhan77/grok-x-team-byLee.git
 # ==============================================================================
 set -e
@@ -77,16 +77,20 @@ default = "internal-qwen"
 stream_tool_calls = true
 temperature = 0.7
 top_p = 0.95
-max_completion_tokens = 32768
-max_tokens = 32768
+max_completion_tokens = 65536
+max_tokens = 65536
+max_output_tokens = 65536
 
 [model.internal-qwen]
 model = "${DEFAULT_MODEL_NAME}"
 base_url = "${SERVER_URL}"
-name = "Internal Qwen 3.8 (27B Q8)"
-description = "In-House Dedicated Coding Agent Model"
+name = "Internal Qwen 3.8 (27B Q8 - 64K Output)"
+description = "In-House Dedicated Coding Agent Model (Long-Task Ready)"
 api_backend = "chat_completions"
 context_window = 131072
+max_completion_tokens = 65536
+max_tokens = 65536
+max_output_tokens = 65536
 temperature = 0.7
 api_key = "sk-internal-team"
 EOF
