@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Rust build artifacts
+target/
+**/*.rs.bk
+Cargo.lock
+
+# Temporary scratchpad directory
+temp/*
+!temp/README.md
+!temp/.gitkeep
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Sensitive Credentials
+*.pem
+*.key
+*.token

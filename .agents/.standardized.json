@@ -1,0 +1,11 @@
+{
+  "initialized_at": "2026-08-18",
+  "answers": {
+    "lang": "General / Polyglot",
+    "test": "Pytest / Standard Unit Testing",
+    "tdd": "TDD-Strict: Wajib membuat/mengupdate test sebelum/bersama implementasi kode",
+    "commit": "Conventional Commits (feat:, fix:, refactor:, test:, docs:, chore:)",
+    "linter": "Standard Linters & Formatters",
+    "security": "Strict Enterprise: 100% On-Premise, zero external cloud telemetry, anti-secret scanning"
+  }
+}

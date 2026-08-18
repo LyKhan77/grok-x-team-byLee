@@ -1,0 +1,261 @@
+[
+  {
+    "concurrency": 1,
+    "total_streams": 1,
+    "successful_streams": 1,
+    "failed_streams": 0,
+    "total_time_s": 20.93,
+    "total_tokens": 512,
+    "avg_ttft_ms": 409.54,
+    "min_ttft_ms": 409.54,
+    "max_ttft_ms": 409.54,
+    "avg_stream_tps": 24.51,
+    "aggregate_tps": 24.46,
+    "all_cot_verified": true,
+    "worker_results": [
+      {
+        "worker_id": 1,
+        "status": "success",
+        "status_code": 200,
+        "ttft_ms": 409.54,
+        "total_time_s": 20.89,
+        "tokens": 512,
+        "reasoning_tokens": 512,
+        "content_tokens": 0,
+        "tps": 24.51,
+        "has_reasoning": true,
+        "sample_output_preview": "..."
+      }
+    ],
+    "gpu_snapshot_pre": [
+      {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15523.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 1,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15391.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 2,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 14885.0,
+        "total_mb": 24576.0
+      }
+    ],
+    "gpu_snapshot_post": [
+      {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15523.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 1,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15391.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 2,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 14885.0,
+        "total_mb": 24576.0
+      }
+    ]
+  },
+  {
+    "concurrency": 2,
+    "total_streams": 2,
+    "successful_streams": 2,
+    "failed_streams": 0,
+    "total_time_s": 24.35,
+    "total_tokens": 1024,
+    "avg_ttft_ms": 1976.92,
+    "min_ttft_ms": 617.04,
+    "max_ttft_ms": 3336.8,
+    "avg_stream_tps": 22.39,
+    "aggregate_tps": 42.05,
+    "all_cot_verified": true,
+    "worker_results": [
+      {
+        "worker_id": 1,
+        "status": "success",
+        "status_code": 200,
+        "ttft_ms": 3336.8,
+        "total_time_s": 24.35,
+        "tokens": 512,
+        "reasoning_tokens": 512,
+        "content_tokens": 0,
+        "tps": 21.02,
+        "has_reasoning": true,
+        "sample_output_preview": "..."
+      },
+      {
+        "worker_id": 2,
+        "status": "success",
+        "status_code": 200,
+        "ttft_ms": 617.04,
+        "total_time_s": 21.54,
+        "tokens": 512,
+        "reasoning_tokens": 512,
+        "content_tokens": 0,
+        "tps": 23.77,
+        "has_reasoning": true,
+        "sample_output_preview": "..."
+      }
+    ],
+    "gpu_snapshot_pre": [
+      {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15523.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 1,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15391.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 2,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 14885.0,
+        "total_mb": 24576.0
+      }
+    ],
+    "gpu_snapshot_post": [
+      {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15523.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 1,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15391.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 2,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 14885.0,
+        "total_mb": 24576.0
+      }
+    ]
+  },
+  {
+    "concurrency": 4,
+    "total_streams": 4,
+    "successful_streams": 4,
+    "failed_streams": 0,
+    "total_time_s": 62.02,
+    "total_tokens": 2048,
+    "avg_ttft_ms": 23182.4,
+    "min_ttft_ms": 618.54,
+    "max_ttft_ms": 43187.14,
+    "avg_stream_tps": 13.8,
+    "aggregate_tps": 33.02,
+    "all_cot_verified": true,
+    "worker_results": [
+      {
+        "worker_id": 1,
+        "status": "success",
+        "status_code": 200,
+        "ttft_ms": 27272.91,
+        "total_time_s": 48.2,
+        "tokens": 512,
+        "reasoning_tokens": 512,
+        "content_tokens": 0,
+        "tps": 10.62,
+        "has_reasoning": true,
+        "sample_output_preview": "..."
+      },
+      {
+        "worker_id": 2,
+        "status": "success",
+        "status_code": 200,
+        "ttft_ms": 618.54,
+        "total_time_s": 21.08,
+        "tokens": 512,
+        "reasoning_tokens": 512,
+        "content_tokens": 0,
+        "tps": 24.29,
+        "has_reasoning": true,
+        "sample_output_preview": "..."
+      },
+      {
+        "worker_id": 3,
+        "status": "success",
+        "status_code": 200,
+        "ttft_ms": 21651.03,
+        "total_time_s": 42.61,
+        "tokens": 512,
+        "reasoning_tokens": 512,
+        "content_tokens": 0,
+        "tps": 12.02,
+        "has_reasoning": true,
+        "sample_output_preview": "..."
+      },
+      {
+        "worker_id": 4,
+        "status": "success",
+        "status_code": 200,
+        "ttft_ms": 43187.14,
+        "total_time_s": 62.02,
+        "tokens": 512,
+        "reasoning_tokens": 512,
+        "content_tokens": 0,
+        "tps": 8.26,
+        "has_reasoning": true,
+        "sample_output_preview": "..."
+      }
+    ],
+    "gpu_snapshot_pre": [
+      {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15523.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 1,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15391.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 2,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 14885.0,
+        "total_mb": 24576.0
+      }
+    ],
+    "gpu_snapshot_post": [
+      {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15523.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 1,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 15391.0,
+        "total_mb": 24576.0
+      },
+      {
+        "index": 2,
+        "name": "NVIDIA GeForce RTX 3090",
+        "used_mb": 14885.0,
+        "total_mb": 24576.0
+      }
+    ]
+  }
+]
