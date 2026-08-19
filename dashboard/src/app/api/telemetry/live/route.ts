@@ -5,8 +5,11 @@ import { getMockTelemetry } from '@/lib/mock-data';
 import { TelemetryData } from '@/lib/types';
 
 // In-memory ring buffer for TPS/TTFT history (last 30 readings)
-const tpsHistory: number[] = [];
-const ttftHistory: number[] = [];
+const globalStore = global as unknown as { tpsHistory: number[]; ttftHistory: number[] };
+if (!globalStore.tpsHistory) {
+  globalStore.tpsHistory = [];
+  globalStore.ttftHistory = [];
+}
 const MAX_HISTORY = 30;
 
 function pushHistory(arr: number[], val: number) {
@@ -21,20 +24,25 @@ export async function GET() {
 
   try {
     // Parallel fetch: GPU + health + slots
-    const [gpus, health, slots] = await Promise.all([
+    const [gpus, health, slotsData] = await Promise.all([
       sampleGpus(),
       checkHealth(),
       getSlots(),
     ]);
+
+    const { totalTokensToday, ...slots } = slotsData;
 
     // Compute aggregate TPS from active slots
     const activeTps = slots.details
       .filter((s) => s.state !== 'idle')
       .reduce((sum, s) => sum + s.tps, 0);
 
-    pushHistory(tpsHistory, activeTps);
-    // Approximate TTFT — llama-server doesn't expose per-request TTFT directly
-    pushHistory(ttftHistory, 350 + Math.random() * 200);
+    pushHistory(globalStore.tpsHistory, activeTps);
+    
+    // Update approximate TTFT only if we have active slots
+    if (slots.active > 0) {
+      pushHistory(globalStore.ttftHistory, 350 + Math.random() * 200);
+    }
 
     const data: TelemetryData = {
       status: health.status === 'ok' ? 'online' : 'degraded',
@@ -44,12 +52,12 @@ export async function GET() {
       slots,
       metrics: {
         current_tps: activeTps,
-        avg_ttft_ms: ttftHistory.length > 0
-          ? ttftHistory.reduce((a, b) => a + b, 0) / ttftHistory.length
+        avg_ttft_ms: globalStore.ttftHistory.length > 0
+          ? globalStore.ttftHistory.reduce((a, b) => a + b, 0) / globalStore.ttftHistory.length
           : 0,
-        total_tokens_today: slots.details.reduce((sum, s) => sum + s.tokens_generated, 0),
-        tps_history: [...tpsHistory],
-        ttft_history: [...ttftHistory],
+        total_tokens_today: totalTokensToday,
+        tps_history: [...globalStore.tpsHistory],
+        ttft_history: [...globalStore.ttftHistory],
       },
       model: {
         name: 'Qwen 3.8 / 2.5 27B Q8_0 GGUF',
@@ -62,7 +70,8 @@ export async function GET() {
     };
 
     return NextResponse.json(data);
-  } catch {
+  } catch (err) {
+    console.error("Telemetry error:", err);
     // Fallback to mock data if server unreachable
     if (useMock) {
       return NextResponse.json(getMockTelemetry());
