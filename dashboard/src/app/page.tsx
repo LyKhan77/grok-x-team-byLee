@@ -4,6 +4,7 @@ import { GpuClusterCard } from '@/components/ribbon-cards/GpuClusterCard';
 import { EngineSlotsCard } from '@/components/ribbon-cards/EngineSlotsCard';
 import { LiveFeedCard } from '@/components/ribbon-cards/LiveFeedCard';
 import { ThroughputCard } from '@/components/ribbon-cards/ThroughputCard';
+import { TokenUsageCard } from '@/components/ribbon-cards/TokenUsageCard';
 import { useTelemetry } from '@/hooks/useTelemetry';
 
 export default function Home() {
@@ -47,6 +48,7 @@ export default function Home() {
         <ThroughputCard metrics={data?.metrics!} />
         <GpuClusterCard gpus={data?.gpus!} />
         <EngineSlotsCard slots={data?.slots!} />
+        <TokenUsageCard />
         <LiveFeedCard slots={data?.slots!} />
       </div>
     </main>
