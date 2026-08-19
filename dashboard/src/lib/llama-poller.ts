@@ -5,13 +5,23 @@ const TIMEOUT_MS = 3000;
 
 // Use global to persist across Next.js dev reloads
 const globalPoller = global as unknown as {
-  slotStates: Map<number, { timestamp: number; startTimestamp: number; n_decoded: number; }>;
+  slotStates: Map<number, { timestamp: number; startTimestamp: number; n_decoded: number; clientIp?: string }>;
   totalTokens: number;
+  pendingIps: string[];
 };
 
 if (!globalPoller.slotStates) {
   globalPoller.slotStates = new Map();
   globalPoller.totalTokens = 0;
+  globalPoller.pendingIps = [];
+}
+
+export function registerClientIp(ip: string) {
+  globalPoller.pendingIps.push(ip);
+  // Keep queue bounded to prevent memory leaks
+  if (globalPoller.pendingIps.length > 50) {
+    globalPoller.pendingIps.shift();
+  }
 }
 
 async function fetchWithTimeout(url: string): Promise<Response> {
@@ -62,12 +72,14 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
 
     let tps = 0;
     let duration_ms = 0;
+    let clientIp = 'Unknown IP';
     const prevState = globalPoller.slotStates.get(id);
 
     if (isProcessing) {
       let startTimestamp = now;
       if (prevState) {
         startTimestamp = prevState.startTimestamp;
+        clientIp = prevState.clientIp || 'Unknown IP';
         const deltaTokens = n_decoded - prevState.n_decoded;
         const deltaMs = now - prevState.timestamp;
         
@@ -78,10 +90,12 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
           // Reset (new request started in the same slot)
           globalPoller.totalTokens += n_decoded;
           startTimestamp = now; // reset start time too
+          clientIp = globalPoller.pendingIps.shift() || 'Direct/Unknown';
         }
       } else {
         // First time we see it processing
         globalPoller.totalTokens += n_decoded;
+        clientIp = globalPoller.pendingIps.shift() || 'Direct/Unknown';
       }
       
       duration_ms = now - startTimestamp;
@@ -89,18 +103,23 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
       // Cap TPS to avoid crazy spikes on first poll
       if (tps > 200) tps = 0;
 
-      globalPoller.slotStates.set(id, { timestamp: now, startTimestamp, n_decoded });
+      globalPoller.slotStates.set(id, { timestamp: now, startTimestamp, n_decoded, clientIp });
     } else {
       // Idle
       globalPoller.slotStates.delete(id);
     }
+
+    // Determine final client string format
+    const finalClient = isProcessing 
+      ? `${clientIp} (Task #${slot.id_task || '?'})`
+      : '-';
 
     return {
       id,
       state: isProcessing ? 'processing' : 'idle',
       tokens_generated: n_decoded,
       tps,
-      client: slot.peer || (slot.id_task ? `Task #${slot.id_task}` : 'Internal'),
+      client: finalClient,
       duration_ms,
       request_type,
       prompt_tokens
