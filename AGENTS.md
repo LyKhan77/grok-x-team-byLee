@@ -34,12 +34,13 @@ Platform ini memberikan pengalaman coding agent tanpa jeda (*zero latency*), tan
 ```
 gspexgrok-agent/
 ├── AGENTS.md                            # 📘 Panduan sistem & standar agent (File ini)
+├── ARCHITECTURE.md                      # 🏛️ Referensi arsitektur teknis lengkap platform
 ├── CHANGELOG.md                         # 📜 Checkpoint riwayat perubahan codebase (WAJIB DIUPDATE)
 ├── README.md                            # 🚀 Dokumentasi onboarding cepat developer
 ├── config.default.toml                  # ⚙️ Template konfigurasi agent (~/.grok/config.toml)
 ├── server-optimize.sh                   # 🖥️ Runner server llama.cpp berkapasitas tinggi (3x GPU)
-├── setup.sh                             # ⚡ 1-Click onboarding script untuk Linux & macOS
-├── setup.ps1                            # 🪟 1-Click onboarding script untuk Windows PowerShell
+├── setup.sh                             # ⚡ 1-Click onboarding script untuk Linux & macOS (Port 8987)
+├── setup.ps1                            # 🪟 1-Click onboarding script untuk Windows PowerShell (Port 8987)
 ├── .gitignore                           # 🛡️ Git ignore list (target/, temp/, secrets)
 │
 ├── docs/                                # 📚 Dokumentasi Lengkap Proyek
@@ -47,6 +48,8 @@ gspexgrok-agent/
 │   ├── CONTEXT.md                       # AI Agent Handover Context
 │   ├── walkthrough.md                   # Laporan hasil verifikasi teknis
 │   └── plans/                           # Arsip Technical Implementation Plans
+│       ├── port_8987_and_developer_identity_plan.md
+│       ├── model_speed_optimization_q8_plan.md
 │       ├── fase3_stress_test_plan.md
 │       ├── fase4_adaptive_standardization_plan.md
 │       ├── fork_and_customization_plan.md

@@ -1,60 +1,46 @@
 # GSPExGrok Agent — Context & Handover Summary
 
-> Dokumen ini dirancang sebagai ringkasan konteks langsung untuk **Antigravity (`agy`)** atau sesi agen berikutnya di direktori `/home/gspe-ai1/project/gspexgrok-agent/`.
+> Dokumen ini dirancang sebagai ringkasan konteks langsung untuk **Antigravity (`agy`)** atau sesi agen berikutnya di repositori `/home/gspe-ai1/project/gspexgrok-agent/`.
 
 ---
 
 ## 📌 Status Terkini Sistem & Inference Server
 
-* **Inference Server:** `llama-server` sedang aktif berjalan di port `8001` (PID: `2612291`).
+* **Arsitektur 2-Tier Enterprise:**
+  * **Public Gateway & Dashboard (Port 8987):** Next.js 14 Streaming Proxy Interceptor + SQLite Token Usage Tracker + Web Dashboard TUI.
+  * **Private Inference Backend (Port 8001):** `llama-server` dengan akselerasi Speculative Decoding pada cluster 3x NVIDIA GeForce RTX 3090.
 * **Model yang Dimuat:** 
-  * Path Model: `/home/gspe-ai1/models/qwen38-27b/Qwen3.8-27B-Q8_0.gguf`
+  * Primary Model: `/home/gspe-ai1/models/qwen38-27b/Qwen3.8-27B-Q8_0.gguf` (27.32B parameters, `Q8_0` ~29.03 GB)
+  * Speculative Draft Model: `/home/gspe-ai1/models/qwen38-27b/Qwen2.5-Coder-0.5B-Q8_0.gguf` (~400 MB pada GPU 0)
   * Vision Projector: `/home/gspe-ai1/models/qwen38-27b/mmproj-BF16.gguf`
   * Model Alias: `qwen35`
-  * Spesifikasi: **Qwen 3.8 / 2.5 27B** (27.32B parameters), kuantisasi `Q8_0` (~29.03 GB)
-  * HuggingFace Reference: [https://huggingface.co/Qwen/Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B)
-* **Distribusi GPU (3x RTX 3090 - Total 72GB VRAM):**
-  * GPU 0: ~15.5 GB VRAM terpakai
-  * GPU 1: ~15.4 GB VRAM terpakai
-  * GPU 2: ~14.9 GB VRAM terpakai
-* **Endpoint Aktif:**
-  * Local: `http://127.0.0.1:8001/v1`
-  * LAN Kantor (Wi-Fi): `http://192.168.2.143:8001/v1`
-  * VPN Tunnel: `http://10.8.0.62:8001/v1`
-  * Health check: `http://127.0.0.1:8001/health` (`{"status":"ok"}`)
-* **Hasil Benchmark:**
-  * Kecepatan: **~27.5 tokens/detik**
-  * Time to First Token (TTFT): **~554 ms**
-  * Dukungan native CoT: Mengeluarkan `reasoning_content` sebelum teks final
+* **Distribusi VRAM (3x RTX 3090 - Total 72GB VRAM):**
+  * GPU 0: ~13.7 GB VRAM (Model + Draft Model + Flash Attention)
+  * GPU 1: ~12.9 GB VRAM
+  * GPU 2: ~13.1 GB VRAM
+  * Sisa Buffer Bebas: ~10.5 GB per GPU (Sangat Dingin & Aman)
+* **Endpoint Publik Tim (Port 8987):**
+  * Web Dashboard: `http://192.168.2.143:8987/`
+  * API Gateway Agent: `http://192.168.2.143:8987/api/v1`
+  * Gateway Health Check: `http://192.168.2.143:8987/api/health`
+* **Developer Identity Tracking:**
+  * Authorization Header: `Authorization: Bearer dev-<nickname>`
+  * LIVE_FEED & SQLite Token Usage Tracker mencatat aktivitas per nama developer (misal: `lee (192.168.2.45)`).
+* **Hasil Performa & Benchmark:**
+  * Throughput Single-Stream: **~27.0 TPS** (Lossless 100% identik dengan Q8_0)
+  * Throughput Multi-Stream: **42–48+ TPS**
+  * Latensi Respon Pertama (TTFT): **~372 ms**
+  * Context Window: Dedicated 128K per slot (`131.072 tokens`), Auto-Compact pada threshold 90%.
 
 ---
 
-## 📂 Strategi & Upstream Base
+## 📂 Komponen Utama Codebase
 
-* **Pilihan Harness:** Fork dari [xai-org/grok-build](https://github.com/xai-org/grok-build) (Apache 2.0).
-* **Alasan:** Ditulis dalam Rust, performa TUI instan, konsumsi RAM kecil, mendukung tool-calling langsung ke OpenAI-compatible endpoints tanpa middleware proxy tambahan.
-* **Penyesuaian yang Sudah Dirancang:**
-  1. Default endpoint otomatis mengarah ke `http://192.168.2.143:8001/v1` (atau `127.0.0.1:8001/v1`).
-  2. Nonaktifkan telemetri cloud (`telemetry = false`, `auto_update = false`).
-  3. Konfigurasi `context_window = 131072` dan `temperature = 0.7`.
-
----
-
-## 🛠️ File & Aset yang Tersedia di Folder Ini
-
-1. [`PRD.md`](PRD.md): Product Requirement Document lengkap untuk skala tim internal.
-2. [`setup.sh`](setup.sh): 1-Click Onboarding script untuk developer laptop.
-3. [`config.default.toml`](config.default.toml): Template konfigurasi `~/.grok/config.toml`.
-4. [`server-optimize.sh`](server-optimize.sh): Runner script server berkapasitas tinggi (4 concurrent slots + Flash Attention).
-5. [`README.md`](README.md): Dokumentasi panduan tim developer.
-
----
-
-## 🎯 Langkah Kerja Lanjutan (Next Steps for `agy`)
-
-1. **Inisialisasi Git / Hubungkan ke Remote Repository:**
-   Inisialisasi git repository di folder ini (`git init`) dan hubungkan ke GitHub remote repository tim yang dibuat oleh user.
-2. **Kustomisasi Rust Source (Jika Diperlukan):**
-   Jika ingin melakukan kompilasi kustom dari `grok-build`, source code dapat diletakkan di sub-folder `crates/` dan di-build menggunakan `cargo build -p xai-grok-pager-bin --release`.
-3. **Uji Beban Multi-User (Stress Testing):**
-   Uji simulasi 2-4 request agent simultan ke `llama-server` untuk memastikan tidak ada VRAM OOM saat context memanjang.
+1. [`README.md`](README.md): Panduan onboarding 1-Click untuk Linux, macOS, dan Windows (PowerShell).
+2. [`setup.sh`](setup.sh): Skrip onboarding Linux & macOS (Darwin/Zsh) dengan prompt nama developer.
+3. [`setup.ps1`](setup.ps1): Skrip native Windows PowerShell dengan variable interpolation yang telah diperbaiki.
+4. [`config.default.toml`](config.default.toml): Template konfigurasi default mengarah ke port 8987 (`api_key = "dev-user"`).
+5. [`server-optimize.sh`](server-optimize.sh): Runner server inferensi GPU berkapasitas tinggi (Speculative Decoding + KV-Cache `q4_0` + 20-Core CPU Polling).
+6. [`dashboard/`](dashboard/): Next.js 14 Telemetry & API Gateway (Port 8987).
+7. [`AGENTS.md`](AGENTS.md): Single Source of Truth standar coding dan panduan agent.
+8. [`CHANGELOG.md`](CHANGELOG.md): Riwayat checkpoint rilis resmi.

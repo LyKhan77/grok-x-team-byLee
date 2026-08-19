@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **System Architecture Blueprint (`ARCHITECTURE.md`):** Penerbitan dokumen arsitektur teknis resmi mencakup topologi 2-tier (Port 8987 Gateway & Port 8001 GPU Backend), Speculative Decoding acceleration, alokasi VRAM 3x RTX 3090, 128K context auto-compact 90%, dan Mermaid sequence diagrams.
 - **Public Port 8987 Consolidation:** Mengalihkan seluruh antarmuka publik tim (Web Dashboard, API Gateway, dan Health Check) ke port terpadu `8987`, sementara port `8001` tetap menjadi port privat inferensi GPU.
 - **Developer Nickname Identity Tracking:** Menambahkan sistem identifikasi developer (`Authorization: Bearer dev-<nickname>`) pada `setup.sh`, `setup.ps1`, `config.default.toml`, dan API Gateway Next.js, sehingga **LIVE_FEED** dan **Token Tracker** menampilkan nama developer (misal: `lee (192.168.2.45)`).
 - **Gateway Health Check Endpoint (`/api/health`):** Endpoint status terpadu di port 8987 untuk memvalidasi kesiapan Gateway dan Llama Backend saat onboarding.

@@ -37,14 +37,15 @@ Membangun dan menyediakan platform **Enterprise Coding Agent On-Premise** untuk 
 * **Native Reasoning:** Model menghasilkan `reasoning_content` (Chain-of-Thought thinking tokens) sebelum mengeluarkan jawaban final atau memanggil tool.
 
 ### 2.2 Inference Infrastructure (`llama.cpp`)
-* **Host Hardware:** 3x NVIDIA GeForce RTX 3090 (Total 72 GB VRAM)
-* **Offloading Strategy:** `--gpu-layers 999 --tensor-split 1,1,1` (Distribusi seimbang ~15 GB VRAM per GPU).
-* **Throughput Benchmark:** ~27.5 tokens/second (single stream), TTFT < 550 ms.
-* **Concurrency Engine:** Continuous batching (`--parallel 4` hingga `8`), Flash Attention (`--flash-attn`), Jinja chat templating.
-* **Active Endpoints:**
-  * Base URL LAN: `http://192.168.2.143:8001/v1`
-  * Base URL Localhost: `http://127.0.0.1:8001/v1`
-  * VPN Tunnel URL: `http://10.8.0.62:8001/v1`
+* **Host Hardware:** 3x NVIDIA GeForce RTX 3090 (Total 72 GB VRAM) + Intel Core Ultra 7 265 (20 Cores)
+* **Offloading Strategy:** `--gpu-layers 999 --tensor-split 1,1,1` (Distribusi seimbang ~13.5 GB VRAM per GPU).
+* **Throughput Benchmark:** ~27.0 tokens/second (single stream), TTFT < 380 ms.
+* **Concurrency Engine:** Continuous batching, Flash Attention (`--flash-attn on`), Jinja chat templating, KV-Cache `q4_0`.
+* **2-Tier Active Endpoints:**
+  * Public Team Web Dashboard: `http://192.168.2.143:8987/`
+  * Public Gateway API: `http://192.168.2.143:8987/api/v1`
+  * Public Gateway Health Check: `http://192.168.2.143:8987/api/health`
+  * Private GPU Backend (Internal Host): `http://127.0.0.1:8001/v1`
 
 ---
 
@@ -68,10 +69,11 @@ Platform agent menggunakan basis open-source [**xai-org/grok-build**](https://gi
    * Sandboxing mode opsional untuk eksekusi kode berisiko.
 
 ### 3.3 Penyesuaian Wajib pada Fork Internal (`gspexgrok-agent`)
-1. **Endpoint Routing Otomatis:** Menghapus ketergantungan wajib pada `grok login` dan secara default mengarahkan request ke `http://192.168.2.143:8001/v1`.
-2. **Telemetry & Auto-Update Disabling:** Mematikan semua panggilan telemetri analitik cloud pihak ketiga (`telemetry = false`, `auto_update = false`).
-3. **Reasoning Stream Parsing:** Menjamin blok proses berpikir Qwen (`reasoning_content`) dirender dalam box *collapsible* di TUI tanpa mengganggu parsing tool-call.
-4. **Pre-Configured System Instructions:** Menginjeksi aturan coding standar tim (*coding standard, commit rules, test requirements*).
+1. **Endpoint Routing Otomatis:** Menghapus ketergantungan wajib pada `grok login` dan secara default mengarahkan request ke API Gateway `http://192.168.2.143:8987/api/v1`.
+2. **Developer Identity Tracking:** Menyertakan identitas developer melalui Authorization Header (`api_key = "dev-<nickname>"`).
+3. **Telemetry & Auto-Update Disabling:** Mematikan semua panggilan telemetri analitik cloud pihak ketiga (`telemetry = false`, `auto_update = false`).
+4. **Reasoning Stream Parsing:** Menjamin blok proses berpikir Qwen (`reasoning_content`) dirender dalam box *collapsible* di TUI tanpa mengganggu parsing tool-call.
+5. **Pre-Configured System Instructions:** Menginjeksi aturan coding standar tim (*coding standard, commit rules, test requirements*).
 
 ---
 
@@ -82,30 +84,30 @@ Platform agent menggunakan basis open-source [**xai-org/grok-build**](https://gi
 │                      Developer Workstations (Team)                      │
 │                                                                         │
 │  ┌────────────────────────┐                 ┌────────────────────────┐  │
-│  │   Developer 1 (macOS)  │                 │   Developer 2 (Linux)  │  │
+│  │   Developer 1 (macOS)  │                 │   Developer 2 (Windows)│  │
 │  │   `grok` TUI Terminal  │                 │   `grok` TUI Terminal  │  │
 │  └───────────┬────────────┘                 └───────────┬────────────┘  │
 └──────────────┼──────────────────────────────────────────┼───────────────┘
                │                                          │
-               │ HTTP REST / SSE (/v1/chat/completions)   │
+               │ HTTP REST / SSE Stream (Bearer dev-name) │
                ▼                                          ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│           Enterprise AI Inference Server (3x NVIDIA RTX 3090)           │
-│                       IP: 192.168.2.143:8001                            │
+│              PUBLIC GATEWAY & TELEMETRY DASHBOARD (Port 8987)           │
+│                    URL: http://192.168.2.143:8987/                      │
 │                                                                         │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                    llama-server (Multi-Slot)                      │  │
-│  │  - Model: Qwen 3.8 / 2.5 27B Q8_0 GGUF                            │  │
-│  │  - Context: 131K / 256K (Flash Attention Enabled)                 │  │
-│  │  - Slot Manager: 4 Parallel Concurrency Streams                   │  │
-│  │  - Multimodal Vision Projector: mmproj-BF16.gguf                  │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│         │                             │                             │   │
-│         ▼                             ▼                             ▼   │
-│  ┌──────────────┐              ┌──────────────┐              ┌────────┐ │
-│  │ GPU 0 (24GB) │              │ GPU 1 (24GB) │              │ GPU 2  │ │
-│  │ Layers 0-21  │              │ Layers 22-43 │              │ Layers │ │
-│  └──────────────┘              └──────────────┘              └────────┘ │
+│  - Streaming Proxy Interceptor (ReadableStream.tee()) Zero Latency      │
+│  - Developer Identity Tracking & SQLite Database (usage.db)             │
+│  - Real-time VRAM, Slot Map, TPS Meter & Live Stream Feed UI            │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ Forward Clean Stream
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│              PRIVATE GPU INFERENCE BACKEND (Port 8001)                  │
+│                     URL: http://127.0.0.1:8001/                         │
+│                                                                         │
+│  - Primary Model: Qwen 3.8 27B Q8_0 GGUF (29.03 GB, 128K Context)       │
+│  - Draft Model: Qwen 2.5 Coder 0.5B Q8_0 (Speculative Acceleration)     │
+│  - Flash Attention & KV-Cache q4_0 on 3x NVIDIA GeForce RTX 3090        │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -113,20 +115,16 @@ Platform agent menggunakan basis open-source [**xai-org/grok-build**](https://gi
 
 ## 5. Developer Onboarding & Usage Workflow
 
-### 5.1 One-Click Setup Script (`setup.sh`)
+### 5.1 One-Click Setup Scripts
 Setiap developer baru hanya perlu menjalankan skrip otomatisasi:
 
-```bash
-git clone https://github.com/<your-org>/gspexgrok-agent.git
-cd gspexgrok-agent
-chmod +x setup.sh
-./setup.sh
-```
+* 🐧 **Linux & 🍎 macOS:** `chmod +x setup.sh && ./setup.sh`
+* 🪟 **Windows PowerShell:** `powershell -ExecutionPolicy Bypass -File .\setup.ps1`
 
-**Proses Otomasi yang Dijalankan `setup.sh`:**
-1. Mendeteksi sistem operasi dan mengunduh binary `grok`.
-2. Melakukan tes ping health check ke endpoint `http://192.168.2.143:8001/health`.
-3. Menulis file konfigurasi standar ke `~/.grok/config.toml`:
+**Proses Otomasi yang Dijalankan Setup Script:**
+1. Meminta input nama/nickname developer untuk tracking kuota & leaderboard.
+2. Melakukan tes ping health check ke endpoint `http://192.168.2.143:8987/api/health`.
+3. Menulis file konfigurasi standar ke `~/.grok/config.toml` (atau `%USERPROFILE%\.grok\config.toml`):
 
 ```toml
 [cli]
@@ -135,22 +133,32 @@ auto_update = false
 [features]
 telemetry = false
 
+[session]
+auto_compact_threshold_percent = 90
+load_envrc = true
+
 [models]
-default = "qwen38-local"
+default = "internal-qwen"
 stream_tool_calls = true
 temperature = 0.7
-top_p = 0.95
-max_completion_tokens = 8192
+top_p = 0.85
+min_p = 0.05
+repeat_penalty = 1.1
 
-[model.qwen38-local]
+[model.internal-qwen]
 model = "qwen35"
-base_url = "http://192.168.2.143:8001/v1"
-name = "Internal Qwen 3.8 (27B Q8)"
-description = "In-House Dedicated Coding Agent on 3x RTX 3090"
+base_url = "http://192.168.2.143:8987/api/v1"
+name = "Internal Qwen 3.8 (27B Q8 - 128K Dedicated)"
+description = "Dedicated 128K Context via Port 8987 Gateway"
 api_backend = "chat_completions"
 context_window = 131072
+max_completion_tokens = 65536
 temperature = 0.7
-api_key = "sk-internal-team"
+top_p = 0.85
+min_p = 0.05
+repeat_penalty = 1.1
+presence_penalty = 0.1
+api_key = "dev-lee"
 ```
 
 ### 5.2 Daily Developer Workflow
