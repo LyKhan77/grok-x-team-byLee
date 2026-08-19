@@ -5,7 +5,7 @@ const TIMEOUT_MS = 3000;
 
 // Use global to persist across Next.js dev reloads
 const globalPoller = global as unknown as {
-  slotStates: Map<number, { timestamp: number; n_decoded: number; }>;
+  slotStates: Map<number, { timestamp: number; startTimestamp: number; n_decoded: number; }>;
   totalTokens: number;
 };
 
@@ -41,6 +41,18 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
   const details: SlotDetail[] = raw.map((slot: any) => {
     const id = slot.id ?? slot.slot_id ?? 0;
     const isProcessing = slot.is_processing;
+    const prompt_tokens = slot.n_prompt_tokens ?? 0;
+
+    // Heuristics for request type
+    let request_type = 'Code Generation';
+    const params = slot.params || {};
+    if (params.reasoning_format || (params.generation_prompt && params.generation_prompt.includes('<think>'))) {
+      request_type = 'Reasoning CoT';
+    } else if (prompt_tokens > 20000) {
+      request_type = 'Large Refactoring';
+    } else if (prompt_tokens < 1000) {
+      request_type = 'Quick Q&A';
+    }
 
     // Extract n_decoded. In newer llama.cpp, it's inside next_token array.
     let n_decoded = slot.n_decoded ?? slot.tokens_predicted ?? 0;
@@ -49,10 +61,13 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
     }
 
     let tps = 0;
+    let duration_ms = 0;
     const prevState = globalPoller.slotStates.get(id);
 
     if (isProcessing) {
+      let startTimestamp = now;
       if (prevState) {
+        startTimestamp = prevState.startTimestamp;
         const deltaTokens = n_decoded - prevState.n_decoded;
         const deltaMs = now - prevState.timestamp;
         
@@ -62,16 +77,19 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
         } else if (deltaTokens < 0) {
           // Reset (new request started in the same slot)
           globalPoller.totalTokens += n_decoded;
+          startTimestamp = now; // reset start time too
         }
       } else {
         // First time we see it processing
         globalPoller.totalTokens += n_decoded;
       }
       
+      duration_ms = now - startTimestamp;
+
       // Cap TPS to avoid crazy spikes on first poll
       if (tps > 200) tps = 0;
 
-      globalPoller.slotStates.set(id, { timestamp: now, n_decoded });
+      globalPoller.slotStates.set(id, { timestamp: now, startTimestamp, n_decoded });
     } else {
       // Idle
       globalPoller.slotStates.delete(id);
@@ -83,6 +101,9 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
       tokens_generated: n_decoded,
       tps,
       client: slot.peer ?? '-',
+      duration_ms,
+      request_type,
+      prompt_tokens
     };
   });
 

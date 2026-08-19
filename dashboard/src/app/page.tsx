@@ -6,6 +6,7 @@ import { LeftRail } from '@/components/layout/LeftRail';
 import { FooterBand } from '@/components/layout/FooterBand';
 import { GpuClusterCard } from '@/components/ribbon-cards/GpuClusterCard';
 import { EngineSlotsCard } from '@/components/ribbon-cards/EngineSlotsCard';
+import { LiveFeedCard } from '@/components/ribbon-cards/LiveFeedCard';
 import { ThroughputCard } from '@/components/ribbon-cards/ThroughputCard';
 import { useTelemetry } from '@/hooks/useTelemetry';
 import styles from './page.module.css';
@@ -52,6 +53,9 @@ export default function DashboardPage() {
 
               {/* Module 2: Slot Concurrency & Engine (Steel) */}
               <EngineSlotsCard slots={data.slots} model={data.model} />
+
+              {/* Module 5: Live Stream Feed (Peach) */}
+              <LiveFeedCard slots={data.slots} />
 
               {/* Module 4: Throughput & Latency (Lime) */}
               <ThroughputCard metrics={data.metrics} />

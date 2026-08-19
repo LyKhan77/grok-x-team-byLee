@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Module 1 — GPU VRAM Monitor (Periwinkle):** Real-time 3x RTX 3090 VRAM usage, temperature, dan compute utilization dengan progress bar klasik.
   - **Module 2 — Inference Engine Slots (Steel):** Status 5 parallel slots, model spec (Qwen 3.8 27B Q8, 131K context, Flash Attention), dan client tracking.
   - **Module 4 — Throughput & Latency Meter (Lime):** Real-time TPS, TTFT, total token hari ini, dan histogram throughput 60 detik terakhir.
+  - **Module 5 — Live Stream Feed (Peach):** Menampilkan daftar request LLM aktif beserta durasi eksekusi, token emit, ukuran prompt, dan heuristik tipe request (Reasoning CoT, Refactoring, dsb).
   - **Backend Telemetry API (`/api/telemetry/live`):** Polling aggregator dari `nvidia-smi` + `llama-server` (/health, /slots) dengan mock data fallback.
   - **1996 Catalog-Era Design System Compliance:** Pixel-perfect implementasi DESIGN.md — 8px page-frame, ribbon-cards dengan tint warna katalog, Arial Black/Helvetica/Times New Roman typography, zero rounded corners, hard-edge bevel stickers.
   - **2-Second Client Polling:** Hook `useTelemetry` dengan `setInterval` 2 detik untuk live update tanpa WebSocket.

@@ -13,6 +13,9 @@ export interface SlotDetail {
   tokens_generated: number;
   tps: number;
   client: string | null;
+  duration_ms?: number;
+  request_type?: string;
+  prompt_tokens?: number;
 }
 
 export interface SlotsSummary {
