@@ -42,7 +42,11 @@ export function EngineSlotsCard({ slots }: { slots: SlotsSummary }) {
   );
 
   return (
-    <TuiSection title="ENGINE_SLOTS" modalContent={modalView}>
+    <TuiSection 
+      title="ENGINE_SLOTS" 
+      description="State map of the llama.cpp continuous batching slots. Tracks which IP client is currently occupying which inference slot in the queue."
+      modalContent={modalView}
+    >
       <div style={{ marginBottom: '16px', color: 'var(--colors-ink)' }}>
         {">"} Active: <span className="text-accent">{activeCount}</span> / {totalCount}
       </div>

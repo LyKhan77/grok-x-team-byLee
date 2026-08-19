@@ -4,11 +4,12 @@ import { ReactNode, useState } from 'react';
 
 interface TuiSectionProps {
   title: string;
+  description?: string;
   children: ReactNode;
   modalContent?: ReactNode;
 }
 
-export function TuiSection({ title, children, modalContent }: TuiSectionProps) {
+export function TuiSection({ title, description, children, modalContent }: TuiSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -41,6 +42,11 @@ export function TuiSection({ title, children, modalContent }: TuiSectionProps) {
             </span>
           )}
         </div>
+        {description && (
+          <div style={{ color: 'var(--colors-mute)', marginBottom: '24px', fontSize: '14px', lineHeight: 1.6 }}>
+            {">"} {description}
+          </div>
+        )}
         <div style={{ color: 'var(--colors-body)' }}>
           {children}
         </div>

@@ -59,7 +59,11 @@ export function ThroughputCard({ metrics }: { metrics: PerformanceMetrics }) {
   );
 
   return (
-    <TuiSection title="LIVE_METRICS" modalContent={modalView}>
+    <TuiSection 
+      title="LIVE_METRICS" 
+      description="Measures real-time tokens per second (TPS) and Time to First Token (TTFT) across the entire cluster. Data is aggregated from all active inference slots."
+      modalContent={modalView}
+    >
       <div 
         style={{
           display: 'grid',

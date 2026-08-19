@@ -38,8 +38,8 @@ export function GpuClusterCard({ gpus }: { gpus: GpuInfo[] }) {
               <span>[{gpu.index}] {gpu.name}</span>
               <span className={colorClass}>{gpu.used_mb}MB / {gpu.total_mb}MB ({vram_percent}%)</span>
             </div>
-            <div className={colorClass} style={{ fontSize: '18px' }}>
-              <AsciiBar percent={vram_percent} width={40} />
+            <div className={colorClass} style={{ fontSize: '16px', wordBreak: 'break-all' }}>
+              <AsciiBar percent={vram_percent} width={25} />
             </div>
             <div style={{ display: 'flex', gap: '32px', marginTop: '16px', color: 'var(--colors-body)' }}>
               <div>{">"} TEMP: {gpu.temp_c}°C</div>
@@ -52,7 +52,11 @@ export function GpuClusterCard({ gpus }: { gpus: GpuInfo[] }) {
   );
 
   return (
-    <TuiSection title="GPU_CLUSTER" modalContent={modalView}>
+    <TuiSection 
+      title="GPU_CLUSTER" 
+      description="Hardware utilization map for the 3x RTX 3090 inference nodes. Displays real-time VRAM allocation, temperature, and core utilization."
+      modalContent={modalView}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {gpus.map((gpu) => {
           const vram_percent = Math.round((gpu.used_mb / gpu.total_mb) * 100);
@@ -76,8 +80,8 @@ export function GpuClusterCard({ gpus }: { gpus: GpuInfo[] }) {
                 <div>[{gpu.index}] <span style={{ color: 'var(--colors-ink)', fontWeight: 500 }}>{gpu.name}</span></div>
                 <div className={colorClass}>{vram_percent}%</div>
               </div>
-              <div className={colorClass} style={{ fontSize: '12px', overflow: 'hidden' }}>
-                <AsciiBar percent={vram_percent} width={30} />
+              <div className={colorClass} style={{ fontSize: '12px', overflow: 'hidden', wordBreak: 'break-all' }}>
+                <AsciiBar percent={vram_percent} width={25} />
               </div>
             </div>
           );

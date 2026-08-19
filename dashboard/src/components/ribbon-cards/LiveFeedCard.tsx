@@ -30,7 +30,11 @@ export function LiveFeedCard({ slots }: { slots: SlotsSummary }) {
   );
 
   return (
-    <TuiSection title="LIVE_FEED" modalContent={modalView}>
+    <TuiSection 
+      title="LIVE_FEED" 
+      description="Real-time telemetry of active inference streams, displaying request classification, generated tokens, and generation speed (tok/s)."
+      modalContent={modalView}
+    >
       <div style={{ 
         border: '1px solid var(--colors-hairline)',
         backgroundColor: 'var(--colors-surface-soft)',
