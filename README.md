@@ -52,7 +52,9 @@ Buka terminal di folder project coding mana saja, lalu jalankan:
 ```bash
 grok
 ```
-Model akan otomatis menggunakan **[Internal Qwen 3.8 Dedicated 128K]** yang terhubung ke AI server lokal kantor (`http://192.168.2.143:8001/v1`).
+Model akan otomatis menggunakan **[Internal Qwen 3.8 Dedicated 128K]** yang terhubung ke AI server Gateway lokal kantor (`http://192.168.2.143:8987/api/v1`).
+
+📊 **Pantau Live Telemetry & Penggunaan Token Tim:** Buka browser di [http://192.168.2.143:8987/](http://192.168.2.143:8987/).
 
 ---
 

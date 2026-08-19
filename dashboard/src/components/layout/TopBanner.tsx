@@ -21,7 +21,7 @@ export function TopBanner({ serverStatus }: TopBannerProps) {
             <span className="typo-button">LIVE TELEMETRY</span>
           </div>
           <div className={styles.phoneCallout}>
-            <span className="typo-h2">HOST: 192.168.2.143:8001</span>
+            <span className="typo-h2">HOST: 192.168.2.143:8987</span>
             <span
               className={styles.statusDot}
               data-status={serverStatus}

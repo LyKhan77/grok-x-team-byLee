@@ -27,11 +27,13 @@ Aturan utamanya meliputi:
    npm install
    ```
 
-3. **Jalankan Development Server:**
+3. **Jalankan Server (Development / Production):**
    ```bash
    npm run dev
+   # atau untuk production:
+   # npm run build && npm run start
    ```
-   *Dashboard akan bisa diakses di `http://localhost:3000`*
+   *Dashboard dan API Gateway akan aktif di `http://localhost:8987` atau `http://192.168.2.143:8987/`*
 
 ---
 

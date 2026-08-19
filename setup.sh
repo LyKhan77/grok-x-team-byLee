@@ -11,8 +11,8 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-DEFAULT_LAN_ENDPOINT="http://192.168.2.143:8001/v1"
-DEFAULT_LOCAL_ENDPOINT="http://127.0.0.1:8001/v1"
+DEFAULT_LAN_ENDPOINT="http://192.168.2.143:8987/api/v1"
+DEFAULT_LOCAL_ENDPOINT="http://127.0.0.1:8987/api/v1"
 DEFAULT_MODEL_NAME="qwen35"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OS_TYPE="$(uname -s)"
@@ -41,8 +41,17 @@ else
     fi
 fi
 
-# 2. Pilihan Endpoint Server
-echo -e "\nPilih Endpoint AI Server Llama.cpp yang akan digunakan:"
+# 2. Input Identitas Developer
+echo -e "\n${CYAN}--- Identitas Developer ---${NC}"
+read -rp "Masukkan nama/nickname Anda (contoh: lee, alex, budi) [default: dev-user]: " DEV_NAME
+DEV_NAME=${DEV_NAME:-dev-user}
+# Sanitasi nama agar hanya huruf, angka, dash, underscore
+DEV_NAME=$(echo "$DEV_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')
+[ -z "$DEV_NAME" ] && DEV_NAME="dev-user"
+echo -e "${GREEN}✔ Identitas tersimpan:${NC} ${DEV_NAME}"
+
+# 3. Pilihan Endpoint Server
+echo -e "\nPilih Endpoint AI Server Gateway yang akan digunakan:"
 echo -e "  1) Jaringan LAN Kantor (${DEFAULT_LAN_ENDPOINT}) [Rekomendasi Laptop/PC Tim]"
 echo -e "  2) Localhost Server (${DEFAULT_LOCAL_ENDPOINT}) [Jika jalan langsung di server AI]"
 echo -e "  3) Custom Endpoint (IP / Domain / VPN / Cloudflare Tunnel)"
@@ -55,22 +64,22 @@ if [ "$ENDPOINT_CHOICE" == "1" ]; then
 elif [ "$ENDPOINT_CHOICE" == "2" ]; then
     SERVER_URL="$DEFAULT_LOCAL_ENDPOINT"
 else
-    read -rp "Masukkan URL Endpoint API (contoh: http://10.8.0.62:8001/v1): " SERVER_URL
+    read -rp "Masukkan URL Endpoint API (contoh: http://10.8.0.62:8987/api/v1): " SERVER_URL
     SERVER_URL=${SERVER_URL:-$DEFAULT_LAN_ENDPOINT}
 fi
 
-# 3. Test Koneksi ke Server
-HEALTH_URL="${SERVER_URL%/v1}/health"
+# 4. Test Koneksi ke Server (Health Check)
+HEALTH_URL="${SERVER_URL%/api/v1}/api/health"
 echo -e "\n${YELLOW}Menguji koneksi ke: ${HEALTH_URL}...${NC}"
 
 if curl -s --connect-timeout 5 "$HEALTH_URL" | grep -q "ok"; then
-    echo -e "${GREEN}✔ Koneksi Berhasil! Server llama.cpp aktif & sehat.${NC}"
+    echo -e "${GREEN}✔ Koneksi Berhasil! API Gateway & Server AI aktif & sehat.${NC}"
 else
     echo -e "${RED}✖ Peringatan: Tidak dapat terhubung ke ${HEALTH_URL}.${NC}"
     echo -e "${YELLOW}Pastikan Anda berada di jaringan Wi-Fi/VPN kantor atau server AI sedang aktif.${NC}"
 fi
 
-# 4. Generate ~/.grok/config.toml
+# 5. Generate ~/.grok/config.toml
 mkdir -p "$HOME/.grok"
 CONFIG_FILE="$HOME/.grok/config.toml"
 
@@ -114,16 +123,16 @@ top_p = 0.85
 min_p = 0.05
 repeat_penalty = 1.1
 presence_penalty = 0.1
-api_key = "sk-internal-team"
+api_key = "dev-${DEV_NAME}"
 EOF
 
-# 5. Pasang Git Hooks Otomatis (jika git diinisialisasi)
+# 6. Pasang Git Hooks Otomatis (jika git diinisialisasi)
 if [ -d "${SCRIPT_DIR}/.git" ]; then
     git config core.hooksPath "${SCRIPT_DIR}/scripts/hooks" 2>/dev/null || true
     echo -e "${GREEN}✔ Git pre-commit secret protection hooks diaktifkan.${NC}"
 fi
 
-# 6. Pasang command grok-standardize ke ~/.local/bin
+# 7. Pasang command grok-standardize ke ~/.local/bin
 mkdir -p "$HOME/.local/bin"
 if [ -f "${SCRIPT_DIR}/scripts/standardize.py" ]; then
     ln -sf "${SCRIPT_DIR}/scripts/standardize.py" "$HOME/.local/bin/grok-standardize"
@@ -138,5 +147,5 @@ echo -e "  1. Buka terminal di folder project coding Anda."
 echo -e "  2. Jalankan: ${CYAN}grok-standardize${NC} atau ketik ${YELLOW}/standardization${NC} di chat untuk menyusun aturan proyek."
 echo -e "  3. Jalankan perintah: ${CYAN}grok${NC}"
 echo -e "  4. Model akan otomatis menggunakan [Internal Qwen 3.8 Dedicated 128K]."
-echo -e "  5. Tekan ${YELLOW}Ctrl + M${NC} untuk melihat atau mengganti model."
+echo -e "  5. Pantau live usage & feed tim di: ${CYAN}http://192.168.2.143:8987/${NC}"
 echo -e "${CYAN}======================================================${NC}"

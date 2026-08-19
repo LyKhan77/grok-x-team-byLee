@@ -13,6 +13,7 @@ const globalPoller = global as unknown as {
 
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 if (!globalPoller.slotStates) {
   globalPoller.slotStates = new Map();
@@ -20,7 +21,7 @@ if (!globalPoller.slotStates) {
   globalPoller.completedTasks = [];
 }
 
-const getPendingIpsFile = () => path.resolve(process.cwd(), '../data/pending_ips.json');
+const getPendingIpsFile = () => path.join(os.tmpdir(), 'gspexgrok_pending_ips.json');
 
 export function registerClientIp(ip: string) {
   try {

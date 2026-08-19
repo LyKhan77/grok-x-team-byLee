@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Public Port 8987 Consolidation:** Mengalihkan seluruh antarmuka publik tim (Web Dashboard, API Gateway, dan Health Check) ke port terpadu `8987`, sementara port `8001` tetap menjadi port privat inferensi GPU.
+- **Developer Nickname Identity Tracking:** Menambahkan sistem identifikasi developer (`Authorization: Bearer dev-<nickname>`) pada `setup.sh`, `setup.ps1`, `config.default.toml`, dan API Gateway Next.js, sehingga **LIVE_FEED** dan **Token Tracker** menampilkan nama developer (misal: `lee (192.168.2.45)`).
+- **Gateway Health Check Endpoint (`/api/health`):** Endpoint status terpadu di port 8987 untuk memvalidasi kesiapan Gateway dan Llama Backend saat onboarding.
+- **Live Feed Session History (CommandCode Style):** Pemantau riwayat sesi LLM yang telah selesai dieksekusi lengkap dengan durasi, total token, kecepatan generasi (tok/s), dan klasifikasi request.
 - **LLM Telemetry & Monitoring Dashboard PRD (`dashboard/PRD.md`):** Penyusunan Product Requirement Document resmi untuk web dashboard monitoring LLM berbasis Next.js dan SQLite.
 - **Dashboard MVP Implementation (`dashboard/src/`):** Implementasi lengkap web dashboard monitoring LLM internal berbasis Next.js 14 (App Router) dengan 4 modul MVP:
   - **Module 1 — GPU VRAM Monitor:** Real-time 3x RTX 3090 VRAM usage, temperature, dan compute utilization dengan ASCII progress bar.
@@ -36,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Benchmark Archive Viewer:** Modul penampil benchmark dihapus karena tidak relevan dengan metrik monitoring *real-time* MVP.
 
 ### Fixed
+- **Windows PowerShell Onboarding Script (`setup.ps1`):** Memperbaiki galat parsing variable path (`$($env:USERPROFILE)`), tag *Here-String* (`@" ... "@`), dan string escaping agar skrip berjalan lancar tanpa `UnexpectedToken` atau `ParserError`.
 - **Token Output Limit Truncation Fix:** Meningkatkan `max_completion_tokens` dan `max_tokens` dari `8192` menjadi `65536` pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` untuk mendukung generasi kode berskala besar tanpa terpotong.
 - **Modular Generation Rule:** Menambahkan prinsip *Modular Tool-First Generation* pada `.agents/rules/00-project-context.md` agar agent menulis kode modular bertahap langsung ke file.
 
