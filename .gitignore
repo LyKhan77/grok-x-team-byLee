@@ -46,3 +46,7 @@ data/
 *.pem
 *.key
 *.token
+
+# Antigravity Plugins / Temp
+.superpowers/
+.playwright-mcp/
