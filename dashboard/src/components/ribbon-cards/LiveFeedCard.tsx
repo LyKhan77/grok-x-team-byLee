@@ -38,6 +38,10 @@ export function LiveFeedCard({ slots }: LiveFeedCardProps) {
                   
                   <div className={styles.feedDetails}>
                     <div className={styles.metric}>
+                      <span className="typo-caption">CLIENT / TASK</span>
+                      <span className="typo-body">{slot.client}</span>
+                    </div>
+                    <div className={styles.metric}>
                       <span className="typo-caption">DURATION</span>
                       <span className="typo-body">{durationSec}s</span>
                     </div>

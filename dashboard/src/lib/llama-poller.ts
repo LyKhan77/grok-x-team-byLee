@@ -100,7 +100,7 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
       state: isProcessing ? 'processing' : 'idle',
       tokens_generated: n_decoded,
       tps,
-      client: slot.peer ?? '-',
+      client: slot.peer || (slot.id_task ? `Task #${slot.id_task}` : 'Internal'),
       duration_ms,
       request_type,
       prompt_tokens
