@@ -59,6 +59,13 @@ gspexgrok-agent/
 │       ├── benchmark_results.json       # Raw metrics output
 │       └── gpu_vram_log.csv             # Perekaman utilisasi VRAM 3x RTX 3090 per detik
 │
+├── dashboard/                           # 📈 Next.js Telemetry & API Gateway
+│   ├── DESIGN.md                        # 🎨 Aturan desain UI TUI / Manpage
+│   ├── README.md                        # 📖 Panduan setup dashboard
+│   ├── PRD.md                           # 📋 Product requirements dashboard
+│   ├── src/app/                         # 🌐 Next.js App Router (UI & API)
+│   └── src/components/                  # 🧩 React TUI Components
+│
 ├── scripts/                             # 🛠️ Tooling & Otomasi
 │   ├── standardize.py                   # Wizard standarisasi proyek interaktif
 │   └── hooks/
