@@ -57,39 +57,49 @@ export async function POST(req: Request) {
 
     // 5. Stream Interception
     if (isStream) {
-      const transformStream = new TransformStream({
-        transform(chunk, controller) {
-          // Pass chunk to user immediately
-          controller.enqueue(chunk);
+      const [streamForUser, streamForLog] = response.body.tee();
+
+      // Background process to sniff token usage
+      (async () => {
+        try {
+          const reader = streamForLog.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
           
-          // Sniff chunk for token usage asynchronously
-          try {
-            const text = new TextDecoder().decode(chunk);
-            if (text.includes('"usage"')) {
-              // Extract the usage object from SSE lines
-              const lines = text.split('\\n');
-              for (const line of lines) {
-                if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-                  try {
-                    const data = JSON.parse(line.slice(6));
-                    if (data.usage && typeof data.usage.prompt_tokens === 'number') {
-                      logUsage(ip, data.usage.prompt_tokens, data.usage.completion_tokens, modelName);
-                    }
-                  } catch (e) {
-                    // Ignore malformed JSON in chunk
-                  }
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            if (typeof value === 'string') {
+              buffer += value;
+            } else {
+              buffer += decoder.decode(value, { stream: true });
+            }
+          }
+
+          console.log("--> STREAM FINISHED, BUFFER LENGTH:", buffer.length);
+          console.log("--> BUFFER TAIL:", buffer.slice(-500));
+          // Parse when stream is completely done
+          const lines = buffer.split('\n');
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ') && trimmed !== 'data: [DONE]') {
+              try {
+                const data = JSON.parse(trimmed.slice(6));
+                if (data.usage && typeof data.usage.prompt_tokens === 'number') {
+                  logUsage(ip, data.usage.prompt_tokens, data.usage.completion_tokens, modelName);
                 }
+              } catch (e) {
+                // Ignore incomplete JSON
               }
             }
-          } catch(e) {
-            // Silently fail sniffing, do not break stream
           }
+        } catch (e) {
+          console.error("Background Sniffer Error:", e);
         }
-      });
+      })();
 
-      return new Response(response.body.pipeThrough(transformStream), {
-        headers: response.headers,
-      });
+      return new Response(streamForUser, { headers: response.headers });
     } else {
       // Non-streaming response, intercept full JSON
       const data = await response.json();
