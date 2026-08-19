@@ -1,74 +1,65 @@
 'use client';
 
-import { PageFrame } from '@/components/layout/PageFrame';
-import { TopBanner } from '@/components/layout/TopBanner';
-import { LeftRail } from '@/components/layout/LeftRail';
-import { FooterBand } from '@/components/layout/FooterBand';
 import { GpuClusterCard } from '@/components/ribbon-cards/GpuClusterCard';
 import { EngineSlotsCard } from '@/components/ribbon-cards/EngineSlotsCard';
 import { LiveFeedCard } from '@/components/ribbon-cards/LiveFeedCard';
 import { BenchmarkCard } from '@/components/ribbon-cards/BenchmarkCard';
 import { ThroughputCard } from '@/components/ribbon-cards/ThroughputCard';
 import { useTelemetry } from '@/hooks/useTelemetry';
-import styles from './page.module.css';
 
-export default function DashboardPage() {
-  const { data, error, loading } = useTelemetry();
+export default function Home() {
+  const { data, loading, error } = useTelemetry();
 
-  const status = data?.status ?? 'offline';
+  if (loading && !data) {
+    return (
+      <main style={{ padding: '48px', maxWidth: '960px', margin: '0 auto' }}>
+        <div className="text-mute">{">"} INITIALIZING SYSTEM...</div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main style={{ padding: '48px', maxWidth: '960px', margin: '0 auto' }}>
+        <div className="text-danger">{">"} ERROR: {String(error)}</div>
+      </main>
+    );
+  }
 
   return (
-    <PageFrame>
-      <TopBanner serverStatus={status} />
+    <main style={{ padding: '64px 32px', maxWidth: '1100px', margin: '0 auto' }}>
+      
+      <header style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'baseline', 
+        borderBottom: '1px solid var(--colors-hairline)', 
+        paddingBottom: '16px',
+        marginBottom: '48px' 
+      }}>
+        <div>
+          <h1 style={{ fontSize: '38px', fontWeight: 700, letterSpacing: '-0.5px', color: 'var(--colors-ink)' }}>CooperAgent</h1>
+          <div className="text-mute" style={{ fontSize: '14px', marginTop: '4px' }}>byLee</div>
+        </div>
+        <div className="text-success" style={{ fontSize: '14px' }}>[+] SYSTEM_ONLINE</div>
+      </header>
 
-      <div className={styles.mainLayout}>
-        {/* LEFT RAIL (28%) */}
-        <div className={styles.leftRail}>
-          <LeftRail
-            serverStatus={status}
-            activeSlots={data?.slots.active ?? 0}
-            totalSlots={data?.slots.total ?? 5}
-            isMock={data?.is_mock ?? false}
-          />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '64px' }}>
+        
+        {/* Left Column */}
+        <div>
+          <ThroughputCard metrics={data?.metrics!} />
+          <GpuClusterCard gpus={data?.gpus!} />
+          <EngineSlotsCard slots={data?.slots!} />
         </div>
 
-        {/* RIGHT MAIN CONTENT (72%) */}
-        <main className={styles.rightContent}>
-          {loading && !data && (
-            <div className={styles.loadingState}>
-              <span className="typo-h2">CONNECTING TO INFERENCE SERVER...</span>
-            </div>
-          )}
+        {/* Right Column */}
+        <div>
+          <LiveFeedCard slots={data?.slots!} />
+          <BenchmarkCard />
+        </div>
 
-          {error && !data && (
-            <div className={styles.errorState}>
-              <span className="typo-h2">CONNECTION ERROR</span>
-              <span className="typo-body">{error}</span>
-            </div>
-          )}
-
-          {data && (
-            <div className={styles.cardStack}>
-              {/* Module 1: GPU VRAM Monitor (Periwinkle) */}
-              <GpuClusterCard gpus={data.gpus} />
-
-              {/* Module 2: Slot Concurrency & Engine (Steel) */}
-              <EngineSlotsCard slots={data.slots} model={data.model} />
-
-              {/* Module 5: Live Stream Feed (Peach) */}
-              <LiveFeedCard slots={data.slots} />
-
-              {/* Module 6: Benchmark & Stress-Test Archive Viewer (Sage) */}
-              <BenchmarkCard />
-
-              {/* Module 4: Throughput & Latency (Lime) */}
-              <ThroughputCard metrics={data.metrics} />
-            </div>
-          )}
-        </main>
       </div>
-
-      <FooterBand />
-    </PageFrame>
+    </main>
   );
 }

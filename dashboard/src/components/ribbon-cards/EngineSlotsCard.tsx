@@ -1,88 +1,48 @@
 'use client';
 
-import { RibbonCard } from '../ui/RibbonCard';
-import { StickerBadge } from '../ui/StickerBadge';
+import { TuiSection } from '../ui/TuiSection';
 import { SlotsSummary } from '@/lib/types';
-import styles from './EngineSlotsCard.module.css';
 
-interface EngineSlotsCardProps {
-  slots: SlotsSummary;
-  model: {
-    name: string;
-    context_window: number;
-    flash_attention: boolean;
-    kv_cache_type: string;
-    max_output_tokens: number;
-  };
-}
+export function EngineSlotsCard({ slots }: { slots: SlotsSummary }) {
+  if (!slots || !slots.details) {
+    return (
+      <TuiSection title="ENGINE_SLOTS">
+        <div>{">"} Status: <span className="text-warning">WAITING_FOR_DATA_</span></div>
+      </TuiSection>
+    );
+  }
 
-export function EngineSlotsCard({ slots, model }: EngineSlotsCardProps) {
+  const activeCount = slots.active;
+  const totalCount = slots.total;
+
   return (
-    <RibbonCard
-      title="INFERENCE ENGINE CONTROLLER"
-      tint="steel"
-    >
-      {/* Model Spec Row */}
-      <div className={styles.specRow}>
-        <table className={styles.specTable}>
-          <tbody>
-            <tr>
-              <td className="typo-h3">MODEL</td>
-              <td className="typo-body">{model.name}</td>
-            </tr>
-            <tr>
-              <td className="typo-h3">CONTEXT</td>
-              <td className="typo-body">{model.context_window.toLocaleString()} Tokens ({Math.floor(model.context_window / 1024)}K)</td>
-            </tr>
-            <tr>
-              <td className="typo-h3">FLASH ATTN</td>
-              <td className="typo-body">{model.flash_attention ? 'ON (-fa)' : 'OFF'}</td>
-            </tr>
-            <tr>
-              <td className="typo-h3">KV-CACHE</td>
-              <td className="typo-body">{model.kv_cache_type.toUpperCase()}</td>
-            </tr>
-            <tr>
-              <td className="typo-h3">MAX OUTPUT</td>
-              <td className="typo-body">{model.max_output_tokens.toLocaleString()} Tokens ({Math.floor(model.max_output_tokens / 1024)}K)</td>
-            </tr>
-          </tbody>
-        </table>
+    <TuiSection title="ENGINE_SLOTS">
+      <div style={{ marginBottom: '16px', color: 'var(--colors-ink)' }}>
+        {">"} Active: <span className="text-accent">{activeCount}</span> / {totalCount}
       </div>
-
-      {/* Slot Status Grid */}
-      <div className={styles.slotGrid}>
-        <div className={styles.slotSummary}>
-          <span className="typo-h3">PARALLEL SLOTS</span>
-          <span className="typo-body">
-            {slots.active} ACTIVE / {slots.idle} IDLE / {slots.total} TOTAL
-          </span>
-        </div>
-        <table className={styles.slotTable}>
-          <thead>
-            <tr>
-              <th className="typo-h3">SLOT</th>
-              <th className="typo-h3">STATE</th>
-              <th className="typo-h3">TOKENS</th>
-              <th className="typo-h3">TPS</th>
-              <th className="typo-h3">CLIENT</th>
-            </tr>
-          </thead>
-          <tbody>
-            {slots.details.map((slot) => (
-              <tr key={slot.id}>
-                <td className="typo-body">Slot {slot.id}</td>
-                <td>
-                  <StickerBadge text={slot.state.toUpperCase()} />
-                </td>
-                <td className="typo-body">{slot.tokens_generated.toLocaleString()}</td>
-                <td className="typo-body">{slot.tps.toFixed(1)}</td>
-                <td className="typo-body">{slot.client ?? '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {slots.details.map((slot) => {
+          const isActive = slot.state === 'processing';
+          return (
+            <div 
+              key={slot.id}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '8px',
+                border: '1px solid var(--colors-hairline)',
+                borderRadius: 'var(--rounded-sm)',
+                backgroundColor: 'var(--colors-surface-soft)',
+                color: isActive ? 'var(--colors-ink)' : 'var(--colors-mute)'
+              }}
+            >
+              <div>{">"} Slot {slot.id}: {isActive ? <span className="text-success">ACTIVE</span> : 'IDLE'}</div>
+              <div>{isActive ? slot.client : '-'}</div>
+            </div>
+          );
+        })}
       </div>
-    </RibbonCard>
+    </TuiSection>
   );
 }

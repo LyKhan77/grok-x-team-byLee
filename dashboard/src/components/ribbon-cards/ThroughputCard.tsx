@@ -1,51 +1,49 @@
 'use client';
 
-import { RibbonCard } from '../ui/RibbonCard';
+import { TuiSection } from '../ui/TuiSection';
 import { PerformanceMetrics } from '@/lib/types';
-import styles from './ThroughputCard.module.css';
 
-interface ThroughputCardProps {
-  metrics: PerformanceMetrics;
-}
-
-export function ThroughputCard({ metrics }: ThroughputCardProps) {
-  const maxTps = Math.max(...metrics.tps_history, 1);
+export function ThroughputCard({ metrics }: { metrics: PerformanceMetrics }) {
+  if (!metrics) {
+    return (
+      <TuiSection title="LIVE_METRICS">
+        <div>{">"} Status: <span className="text-warning">WAITING_FOR_DATA_</span></div>
+      </TuiSection>
+    );
+  }
 
   return (
-    <RibbonCard
-      title="REAL-TIME LATENCY & THROUGHPUT METER"
-      tint="lime"
-    >
-      {/* Big Numbers Row */}
-      <div className={styles.metricsRow}>
-        <div className={styles.metric}>
-          <span className="typo-display">{metrics.current_tps.toFixed(1)}</span>
-          <span className="typo-h3">TOKENS/SEC (TPS)</span>
+    <TuiSection title="LIVE_METRICS">
+      <div 
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '16px',
+          padding: '24px',
+          backgroundColor: 'var(--colors-surface-card)',
+          borderRadius: 'var(--rounded-sm)',
+          border: '1px solid var(--colors-hairline)'
+        }}
+      >
+        <div>
+          <div className="text-mute" style={{ marginBottom: '8px' }}>// Throughput (TPS)</div>
+          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--colors-success)' }}>
+            {metrics.current_tps.toFixed(2)}
+          </div>
         </div>
-        <div className={styles.metric}>
-          <span className="typo-display">{metrics.avg_ttft_ms.toFixed(0)}</span>
-          <span className="typo-h3">AVG TTFT (MS)</span>
+        
+        <div>
+          <div className="text-mute" style={{ marginBottom: '8px' }}>// Avg TTFT (ms)</div>
+          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--colors-accent)' }}>
+            {metrics.avg_ttft_ms > 0 ? metrics.avg_ttft_ms.toFixed(0) : '-'}
+          </div>
         </div>
-        <div className={styles.metric}>
-          <span className="typo-h1">{metrics.total_tokens_today.toLocaleString()}</span>
-          <span className="typo-h3">TOKENS TODAY</span>
-        </div>
-      </div>
 
-      {/* TPS History Bar Chart — last 30 readings (1 minute at 2s interval) */}
-      <div className={styles.chartSection}>
-        <span className="typo-h3">THROUGHPUT HISTORY (LAST 60 SECONDS)</span>
-        <div className={styles.barChart}>
-          {metrics.tps_history.map((tps, i) => (
-            <div
-              key={i}
-              className={styles.bar}
-              style={{ height: `${(tps / maxTps) * 100}%` }}
-              title={`${tps.toFixed(1)} TPS`}
-            />
-          ))}
+        <div style={{ gridColumn: '1 / -1', marginTop: '16px', borderTop: '1px solid var(--colors-hairline)', paddingTop: '16px' }}>
+          <div className="text-mute" style={{ marginBottom: '8px' }}>// Total Tokens Emitted</div>
+          <div style={{ fontSize: '18px', color: 'var(--colors-ink)' }}>{metrics.total_tokens_today.toLocaleString()} tok</div>
         </div>
       </div>
-    </RibbonCard>
+    </TuiSection>
   );
 }

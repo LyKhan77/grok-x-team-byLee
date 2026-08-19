@@ -1,148 +1,61 @@
-/* ============================================================
-   DESIGN TOKENS — 1996 Catalog-Era Enterprise Web Design
-   Source: dashboard/DESIGN.md (Dell December 1996)
-   ============================================================ */
-
 :root {
-  /* ── Brand & Accent ── */
-  --color-primary: #e91d2a;          /* Dell Red — CTA panel & phone callout only */
-  --color-yellow-sticker: #fcc20f;   /* Sticker yellow — BUY a DELL / NEW! bursts */
-  --color-purple-stripe: #6a26a4;    /* Purple accent stripe (sticker chrome) */
+  /* Dark Mode TUI Palette based on DESIGN.md inversion */
+  --colors-canvas: #201d1d;
+  --colors-surface-soft: #2a2727;
+  --colors-surface-card: #302c2c;
+  --colors-ink: #fdfcfc;
+  --colors-charcoal: #e6e6e6;
+  --colors-body: #a0a0a5;
+  --colors-mute: #888686;
+  --colors-hairline: rgba(253, 252, 252, 0.12);
+  --colors-hairline-strong: #646262;
 
-  /* ── Surface ── */
-  --color-frame-ink: #000000;        /* Page frame, banner, borders, dividers */
-  --color-canvas: #ffffff;           /* White page surface inside frame */
+  /* Semantic / Apple HIG */
+  --colors-accent: #007aff;
+  --colors-danger: #ff3b30;
+  --colors-warning: #ff9f0a;
+  --colors-success: #30d158;
 
-  /* ── Text ── */
-  --color-ink: #000000;              /* Body text, headings */
-  --color-on-primary: #ffffff;       /* Text on Dell Red surfaces */
-  --color-link: #0000ee;             /* Netscape 3.x default link blue */
+  /* Typography */
+  --font-mono: 'Berkeley Mono', 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
-  /* ── Ribbon-Card Tint Family ── */
-  --color-tint-olive: #8e8a25;
-  --color-tint-sage: #b3bd95;
-  --color-tint-salmon: #d77a7a;
-  --color-tint-peach: #e6915d;
-  --color-tint-lime: #c0d4a7;
-  --color-tint-sky: #9ab6c8;
-  --color-tint-steel: #a5b8c0;
-  --color-tint-periwinkle: #8c9ae0;
-
-  /* ── Typography ── */
-  --font-display: 'Arial Black', Helvetica, system-ui, sans-serif;
-  --font-ui: Helvetica, Arial, system-ui, sans-serif;
-  --font-body: 'Times New Roman', Times, serif;
-
-  /* ── Spacing (4px base) ── */
-  --spacing-xxs: 2px;
-  --spacing-xs: 4px;
-  --spacing-s: 6px;
+  /* Spacing */
   --spacing-sm: 8px;
-  --spacing-m: 10px;
   --spacing-md: 12px;
   --spacing-lg: 16px;
-  --spacing-xl: 20px;
-  --spacing-xxl: 24px;
-  --spacing-section-sm: 32px;
-  --spacing-section: 40px;
-  --spacing-section-lg: 48px;
+  --spacing-xl: 24px;
+  --spacing-section: 96px;
 
-  /* ── Elevation ── */
-  --border-hairline: 1px solid var(--color-frame-ink);
-  --border-frame: 8px solid var(--color-frame-ink);
-
-  /* ── Shapes ── */
+  /* Rounded */
   --rounded-none: 0px;
-  --rounded-full: 9999px;
-}
-
-/* ── Global Reset ── */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  --rounded-sm: 4px;
 }
 
 body {
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.4;
-  color: var(--color-ink);
-  background-color: var(--color-frame-ink);
+  background-color: var(--colors-canvas);
+  color: var(--colors-ink);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
+h1, h2, h3, h4, p {
+  margin: 0;
+  font-weight: normal;
+}
+
+/* Base UI Elements */
 a {
-  color: var(--color-link);
+  color: var(--colors-ink);
   text-decoration: underline;
 }
 
-/* ── Typography Classes ── */
-.typo-display {
-  font-family: var(--font-display);
-  font-size: 36px;
-  font-weight: 900;
-  line-height: 1.0;
-  text-transform: uppercase;
-}
-
-.typo-h1 {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 900;
-  line-height: 1.05;
-  text-transform: uppercase;
-}
-
-.typo-h2 {
-  font-family: var(--font-ui);
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.typo-h3 {
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.typo-body {
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.4;
-}
-
-.typo-body-sm {
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.4;
-}
-
-.typo-caption {
-  font-family: var(--font-body);
-  font-size: 11px;
-  font-weight: 400;
-  line-height: 1.35;
-}
-
-.typo-button {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.0;
-  text-transform: uppercase;
-}
-
-.typo-ui-label {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.0;
-  text-transform: uppercase;
-}
+/* Utilities */
+.text-accent { color: var(--colors-accent); }
+.text-danger { color: var(--colors-danger); }
+.text-warning { color: var(--colors-warning); }
+.text-success { color: var(--colors-success); }
+.text-mute { color: var(--colors-mute); }
