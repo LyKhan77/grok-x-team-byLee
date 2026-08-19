@@ -23,6 +23,7 @@ export function getMockTelemetry(): TelemetryData {
         { id: 3, state: 'idle', tokens_generated: 0, tps: 0, client: null },
         { id: 4, state: 'idle', tokens_generated: 0, tps: 0, client: null },
       ],
+      completed: []
     },
     metrics: {
       current_tps: 42.05 + jitter() * 3,

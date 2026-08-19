@@ -18,11 +18,23 @@ export interface SlotDetail {
   prompt_tokens?: number;
 }
 
+export interface CompletedTask {
+  task_id: string;
+  client: string;
+  timestamp: number;
+  duration_ms: number;
+  tokens_generated: number;
+  prompt_tokens: number;
+  tps: number;
+  request_type: string;
+}
+
 export interface SlotsSummary {
   total: number;
   active: number;
   idle: number;
   details: SlotDetail[];
+  completed: CompletedTask[];
 }
 
 export interface PerformanceMetrics {
