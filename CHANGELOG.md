@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Interactive Visual Modals:** Kemampuan meng-klik setiap panel (*section*) untuk memunculkan *overlay modal* yang menampilkan detail visual metrik seperti grafik dan histogram secara responsif tanpa tumpang-tindih (*overlap*).
 - **Hybrid High-Precision Sampling Configuration:** Mengaktifkan kombinasi parameter sampling anti-halusinasi dan anti-looping (`min-p 0.05`, `repeat-penalty 1.10`, `top-k 20`, `top-p 0.85`, `presence-penalty 0.1`) pada `server-optimize.sh`, `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh`.
 - **128K Dedicated Context Window per Developer:** Mengonfigurasi server dengan 2 slots parallel dari 262K total context sehingga setiap developer mendapatkan 131,072 tokens dedicated tanpa terbagi kecil.
-- **Auto-Compact Integration (75% Threshold):** Mengaktifkan fitur bawaan `auto_compact_threshold_percent = 75` pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` yang otomatis meringkas context percakapan saat mencapai ~98K tokens, menjamin zero *exceed context size error* pada long-task berkelanjutan.
+- **Auto-Compact 90% Threshold Upgrade:** Menaikkan ambang batas auto-compact menjadi `auto_compact_threshold_percent = 90` pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` (memicu kompresi pada ~118K token dalam 128K context) untuk memaksimalkan kapasitas percakapan long-task.
+- **State-First & Subagent Architecture Guidelines:** Menetapkan aturan di `.agents/rules/00-project-context.md` agar agent selalu merawat checklist `plan.md` sebagai ground truth kerja dan memecah tugas kompleks menjadi sub-task mandiri dengan context terisolasi.
 
 ### Removed
 - **Benchmark Archive Viewer:** Modul penampil benchmark dihapus karena tidak relevan dengan metrik monitoring *real-time* MVP.

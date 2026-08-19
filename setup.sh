@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Setup Script: Internal Grok Coding Agent for Team (128K Dedicated & Auto-Compact)
+# Setup Script: Internal Grok Coding Agent for Team (128K Dedicated & Auto-Compact 90%)
 # Repository: https://github.com/LyKhan77/grok-x-team-byLee.git
 # ==============================================================================
 set -e
@@ -73,7 +73,7 @@ auto_update = false
 telemetry = false
 
 [session]
-auto_compact_threshold_percent = 75    # Auto-compact saat context mencapai 75% (~98K tokens)
+auto_compact_threshold_percent = 90    # Auto-compact saat context mencapai 90% (~118K tokens)
 load_envrc = true
 
 [models]
@@ -91,7 +91,7 @@ max_output_tokens = 65536
 model = "${DEFAULT_MODEL_NAME}"
 base_url = "${SERVER_URL}"
 name = "Internal Qwen 3.8 (27B Q8 - 128K Dedicated)"
-description = "Dedicated 128K Context with Auto-Compact & Hybrid Sampling"
+description = "Dedicated 128K Context with Auto-Compact 90% & Hybrid Sampling"
 api_backend = "chat_completions"
 context_window = 131072
 max_completion_tokens = 65536

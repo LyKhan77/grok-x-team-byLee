@@ -10,4 +10,6 @@
 1. **YAGNI & Minimal Complexity:** Never introduce speculative abstractions or unneeded dependencies. Standard library and native constructs come first.
 2. **Deterministic & Isolated Architecture:** Clear modular boundaries with single responsibilities per module.
 3. **Modular Tool-First Generation:** For complex projects (such as games, complex algorithms, or multi-file services), write code incrementally directly to separate modular files using tool calls (`file_write` / `file_edit`) rather than generating thousands of lines in a single response block.
-4. **Continuous Changelog:** Every meaningful modification to the codebase must be recorded in `CHANGELOG.md`.
+4. **State-First & Artifact-Centric Execution:** For multi-step tasks, always maintain an active `plan.md` checklist in the workspace root as the ground truth. Update checkbox statuses (`[x]`) upon sub-task completion so state persists across sessions and compactions.
+5. **Subagent Task Decomposition:** Decompose complex multi-file tasks into focused, isolated sub-tasks with low context footprints (3K–8K tokens) to maximize reasoning precision and minimize execution latency.
+6. **Continuous Changelog:** Every meaningful modification to the codebase must be recorded in `CHANGELOG.md`.
