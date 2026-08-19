@@ -61,6 +61,14 @@ grok
 
 ---
 
+## 📈 Telemetry Dashboard & Architecture
+
+Platform ini menyertakan *Telemetry Dashboard* berbasis Next.js untuk memantau beban klaster GPU secara real-time.
+- **Topology & Design:** Menggunakan antarmuka minimalis bergaya Terminal TUI/Manpage (Dark Mode). Lihat dokumen arsitektur desain: **[dashboard/DESIGN.md](dashboard/DESIGN.md)**.
+- **Fitur Utama:** Pemantauan Throughput (TPS), TTFT, Alokasi VRAM (3x RTX 3090), Engine Slots, dan Live Stream Feed.
+
+---
+
 ## 📚 Navigasi Dokumentasi & Test
 
 - 📘 **[AGENTS.md](AGENTS.md)**: Panduan sistem, arsitektur, dan protokol wajib update changelog.

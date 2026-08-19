@@ -10,19 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **LLM Telemetry & Monitoring Dashboard PRD (`dashboard/PRD.md`):** Penyusunan Product Requirement Document resmi untuk web dashboard monitoring LLM berbasis Next.js, SQLite, dan kepatuhan penuh terhadap 1996 Catalog-Era Design System (`dashboard/DESIGN.md`).
-- **Dashboard MVP Implementation (`dashboard/src/`):** Implementasi lengkap web dashboard monitoring LLM internal berbasis Next.js 14 (App Router) dengan 3 modul MVP:
-  - **Module 1 — GPU VRAM Monitor (Periwinkle):** Real-time 3x RTX 3090 VRAM usage, temperature, dan compute utilization dengan progress bar klasik.
-  - **Module 2 — Inference Engine Slots (Steel):** Status 5 parallel slots, model spec (Qwen 3.8 27B Q8, 131K context, Flash Attention), dan client tracking.
-  - **Module 4 — Throughput & Latency Meter (Lime):** Real-time TPS, TTFT, total token hari ini, dan histogram throughput 60 detik terakhir.
-  - **Module 5 — Live Stream Feed (Peach):** Menampilkan daftar request LLM aktif beserta durasi eksekusi, token emit, ukuran prompt, dan heuristik tipe request (Reasoning CoT, Refactoring, dsb).
-  - **Module 6 — Benchmark Archive Viewer (Sage):** Membaca hasil pengujian dari `test/results/benchmark_report.md` secara live dan menyediakan tombol 1-Click untuk memicu `./test/run_stress_test.sh` di background.
-  - **Backend Telemetry API (`/api/telemetry/live`):** Polling aggregator dari `nvidia-smi` + `llama-server` (/health, /slots) dengan mock data fallback.
-  - **1996 Catalog-Era Design System Compliance:** Pixel-perfect implementasi DESIGN.md — 8px page-frame, ribbon-cards dengan tint warna katalog, Arial Black/Helvetica/Times New Roman typography, zero rounded corners, hard-edge bevel stickers.
-  - **2-Second Client Polling:** Hook `useTelemetry` dengan `setInterval` 2 detik untuk live update tanpa WebSocket.
+- **LLM Telemetry & Monitoring Dashboard PRD (`dashboard/PRD.md`):** Penyusunan Product Requirement Document resmi untuk web dashboard monitoring LLM berbasis Next.js dan SQLite.
+- **Dashboard MVP Implementation (`dashboard/src/`):** Implementasi lengkap web dashboard monitoring LLM internal berbasis Next.js 14 (App Router) dengan 4 modul MVP:
+  - **Module 1 — GPU VRAM Monitor:** Real-time 3x RTX 3090 VRAM usage, temperature, dan compute utilization dengan ASCII progress bar.
+  - **Module 2 — Inference Engine Slots:** Status 5 parallel slots, model spec, dan client tracking dalam bentuk grid map visual.
+  - **Module 4 — Throughput & Latency Meter:** Real-time TPS, TTFT, total token hari ini, dengan *Sparkline chart* interaktif.
+  - **Module 5 — Live Stream Feed:** Menampilkan daftar request LLM aktif beserta durasi eksekusi, token emit, ukuran prompt, dan klasifikasi tipe request.
+  - **Backend Telemetry API (`/api/telemetry/live`):** Polling aggregator dari `nvidia-smi` + `llama-server` (/health, /slots).
+  - **Terminal TUI & Manpage Design System (`dashboard/DESIGN.md`):** Perombakan UI secara total menggunakan *Dark Mode TUI aesthetic*. 100% Font Monospace (JetBrains/Berkeley Mono), warna dasar `Canvas: #201d1d`, garis batas *hairline 1px*, sudut melengkung 4px, dan marker ASCII (`[+]`) sebagai pengganti ikon SVG.
+  - **Interactive Visual Modals:** Kemampuan meng-klik setiap panel (*section*) untuk memunculkan *overlay modal* yang menampilkan detail visual metrik seperti grafik dan histogram secara responsif tanpa tumpang-tindih (*overlap*).
 - **Hybrid High-Precision Sampling Configuration:** Mengaktifkan kombinasi parameter sampling anti-halusinasi dan anti-looping (`min-p 0.05`, `repeat-penalty 1.10`, `top-k 20`, `top-p 0.85`, `presence-penalty 0.1`) pada `server-optimize.sh`, `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh`.
 - **128K Dedicated Context Window per Developer:** Mengonfigurasi server dengan 2 slots parallel dari 262K total context sehingga setiap developer mendapatkan 131,072 tokens dedicated tanpa terbagi kecil.
 - **Auto-Compact Integration (75% Threshold):** Mengaktifkan fitur bawaan `auto_compact_threshold_percent = 75` pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` yang otomatis meringkas context percakapan saat mencapai ~98K tokens, menjamin zero *exceed context size error* pada long-task berkelanjutan.
+
+### Removed
+- **Benchmark Archive Viewer:** Modul penampil benchmark dihapus karena tidak relevan dengan metrik monitoring *real-time* MVP.
 
 ### Fixed
 - **Token Output Limit Truncation Fix:** Meningkatkan `max_completion_tokens` dan `max_tokens` dari `8192` menjadi `65536` pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` untuk mendukung generasi kode berskala besar tanpa terpotong.

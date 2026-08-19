@@ -107,6 +107,8 @@ gspexgrok-agent/
 - [x] **Fase 3: Multi-User Scale & Concurrency Testing** — Selesai (Benchmark 1-4 stream sukses, peak throughput 42 tok/s, VRAM aman di 15.5 GB).
 - [x] **Fase 4: Adaptive Standardization & Project Restructuring** — Selesai (Wizard `scripts/standardize.py`, slash command `/standardization`, `AGENTS.md`, `CHANGELOG.md`, `docs/`, `test/`).
 - [x] **Fase 5: Git Remote Synchronization & Upstream Merge** — Selesai (Tersinkronisasi penuh ke `https://github.com/LyKhan77/grok-x-team-byLee.git`).
+- [x] **Fase 6: Telemetry Dashboard (MVP)** — Selesai (API Gateway, Llama Poller, Live Feed, dan implementasi UI Dark Mode TUI/Manpage dari `dashboard/DESIGN.md`).
+- [ ] **Fase 7: Token Usage Tracker (Module 3)** — Pending (Integrasi SQLite untuk melacak sisa kuota token *developer*).
 
 ---
 
