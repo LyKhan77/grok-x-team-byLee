@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Setup Script: Internal Grok Coding Agent for Team (256K Context & Hybrid Sampling)
+# Setup Script: Internal Grok Coding Agent for Team (128K Dedicated & Auto-Compact)
 # Repository: https://github.com/LyKhan77/grok-x-team-byLee.git
 # ==============================================================================
 set -e
@@ -72,6 +72,10 @@ auto_update = false
 [features]
 telemetry = false
 
+[session]
+auto_compact_threshold_percent = 75    # Auto-compact saat context mencapai 75% (~98K tokens)
+load_envrc = true
+
 [models]
 default = "internal-qwen"
 stream_tool_calls = true
@@ -86,10 +90,10 @@ max_output_tokens = 65536
 [model.internal-qwen]
 model = "${DEFAULT_MODEL_NAME}"
 base_url = "${SERVER_URL}"
-name = "Internal Qwen 3.8 (27B Q8 - 256K Hybrid)"
-description = "High-precision hybrid sampling for deep reasoning and complex coding"
+name = "Internal Qwen 3.8 (27B Q8 - 128K Dedicated)"
+description = "Dedicated 128K Context with Auto-Compact & Hybrid Sampling"
 api_backend = "chat_completions"
-context_window = 262144
+context_window = 131072
 max_completion_tokens = 65536
 max_tokens = 65536
 max_output_tokens = 65536
@@ -121,6 +125,6 @@ echo -e "${GREEN}🎉 Setup Selesai! Cara menggunakan Grok Agent:${NC}"
 echo -e "  1. Buka terminal di folder project coding Anda."
 echo -e "  2. Jalankan: ${CYAN}grok-standardize${NC} atau ketik ${YELLOW}/standardization${NC} di chat untuk menyusun aturan proyek."
 echo -e "  3. Jalankan perintah: ${CYAN}grok${NC}"
-echo -e "  4. Model akan otomatis menggunakan [Internal Qwen 3.8 Hybrid]."
+echo -e "  4. Model akan otomatis menggunakan [Internal Qwen 3.8 Dedicated 128K]."
 echo -e "  5. Tekan ${YELLOW}Ctrl + M${NC} untuk melihat atau mengganti model."
 echo -e "${CYAN}======================================================${NC}"

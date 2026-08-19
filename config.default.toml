@@ -1,4 +1,4 @@
-# Konfigurasi Default Grok Build untuk Tim Internal AI (256K Context & Hybrid Sampling)
+# Konfigurasi Default Grok Build untuk Tim Internal AI (128K Dedicated Context & Auto-Compact)
 # Simpan file ini di: ~/.grok/config.toml
 
 [cli]
@@ -6,6 +6,10 @@ auto_update = false
 
 [features]
 telemetry = false
+
+[session]
+auto_compact_threshold_percent = 75    # Auto-compact saat context mencapai 75% (~98K tokens)
+load_envrc = true
 
 [models]
 default = "qwen38-local"
@@ -22,10 +26,10 @@ max_output_tokens = 65536
 [model.qwen38-local]
 model = "qwen35"
 base_url = "http://192.168.2.143:8001/v1"
-name = "Internal Qwen 3.8 / 2.5 (27B Q8 - 256K Hybrid)"
-description = "High-precision hybrid sampling for deep reasoning and complex coding"
+name = "Internal Qwen 3.8 / 2.5 (27B Q8 - 128K Dedicated)"
+description = "Dedicated 128K Context with Auto-Compact & Hybrid Sampling"
 api_backend = "chat_completions"
-context_window = 262144
+context_window = 131072
 max_completion_tokens = 65536
 max_tokens = 65536
 max_output_tokens = 65536
@@ -42,7 +46,7 @@ model = "qwen35"
 base_url = "http://127.0.0.1:8001/v1"
 name = "Localhost Qwen (Direct Server)"
 api_backend = "chat_completions"
-context_window = 262144
+context_window = 131072
 max_completion_tokens = 65536
 max_tokens = 65536
 max_output_tokens = 65536

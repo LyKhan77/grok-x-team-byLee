@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **1996 Catalog-Era Design System Compliance:** Pixel-perfect implementasi DESIGN.md — 8px page-frame, ribbon-cards dengan tint warna katalog, Arial Black/Helvetica/Times New Roman typography, zero rounded corners, hard-edge bevel stickers.
   - **2-Second Client Polling:** Hook `useTelemetry` dengan `setInterval` 2 detik untuk live update tanpa WebSocket.
 - **Hybrid High-Precision Sampling Configuration:** Mengaktifkan kombinasi parameter sampling anti-halusinasi dan anti-looping (`min-p 0.05`, `repeat-penalty 1.10`, `top-k 20`, `top-p 0.85`, `presence-penalty 0.1`) pada `server-optimize.sh`, `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh`.
-- **256K Context Window Upgrade:** Meningkatkan total context server ke `262,144 tokens` (memberikan ~52.4K token dedicated per slot pada 5 developer bersamaan) untuk menjamin eksekusi long-task dan multi-turn reasoning `xhigh` tanpa terpotong.
+- **128K Dedicated Context Window per Developer:** Mengonfigurasi server dengan 2 slots parallel dari 262K total context sehingga setiap developer mendapatkan 131,072 tokens dedicated tanpa terbagi kecil.
+- **Auto-Compact Integration (75% Threshold):** Mengaktifkan fitur bawaan `auto_compact_threshold_percent = 75` pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` yang otomatis meringkas context percakapan saat mencapai ~98K tokens, menjamin zero *exceed context size error* pada long-task berkelanjutan.
 
 ### Fixed
 - **Token Output Limit Truncation Fix:** Meningkatkan `max_completion_tokens` dan `max_tokens` dari `8192` menjadi `65536` pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` untuk mendukung generasi kode berskala besar tanpa terpotong.
