@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Setup Script: Internal Grok Coding Agent for Team (128K Dedicated & Auto-Compact 90%)
+# Setup Script: Internal Grok Coding Agent for Team (Linux & macOS Edition)
 # Repository: https://github.com/LyKhan77/grok-x-team-byLee.git
 # ==============================================================================
 set -e
@@ -15,18 +15,30 @@ DEFAULT_LAN_ENDPOINT="http://192.168.2.143:8001/v1"
 DEFAULT_LOCAL_ENDPOINT="http://127.0.0.1:8001/v1"
 DEFAULT_MODEL_NAME="qwen35"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OS_TYPE="$(uname -s)"
 
 echo -e "${CYAN}======================================================${NC}"
-echo -e "${CYAN}   🚀 Internal Grok Coding Agent Setup (Team Edition) ${NC}"
+echo -e "${CYAN}   🚀 Internal Grok Coding Agent Setup (Linux & Mac)  ${NC}"
 echo -e "${CYAN}======================================================${NC}\n"
 
-# 1. Deteksi / Install binary grok
+# 1. Deteksi OS & Install binary grok
 if command -v grok &> /dev/null; then
     echo -e "${GREEN}✔ Grok CLI terdeteksi:${NC} $(grok --version 2>/dev/null || echo 'Installed')"
 else
-    echo -e "${YELLOW}Grok CLI belum terpasang. Menginstall binary resmi...${NC}"
+    echo -e "${YELLOW}Grok CLI belum terpasang di sistem ($OS_TYPE). Menginstall binary resmi...${NC}"
     curl -fsSL https://x.ai/cli/install.sh | bash
     export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"
+
+    # Tambahkan path ke profil shell yang sesuai
+    if [ "$OS_TYPE" == "Darwin" ]; then
+        # macOS (Zsh default)
+        [ -f "$HOME/.zshrc" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
+        [ -f "$HOME/.bash_profile" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bash_profile"
+    else
+        # Linux (Bash default)
+        [ -f "$HOME/.bashrc" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+        [ -f "$HOME/.zshrc" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
+    fi
 fi
 
 # 2. Pilihan Endpoint Server

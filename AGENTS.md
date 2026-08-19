@@ -38,7 +38,8 @@ gspexgrok-agent/
 ├── README.md                            # 🚀 Dokumentasi onboarding cepat developer
 ├── config.default.toml                  # ⚙️ Template konfigurasi agent (~/.grok/config.toml)
 ├── server-optimize.sh                   # 🖥️ Runner server llama.cpp berkapasitas tinggi (3x GPU)
-├── setup.sh                             # ⚡ 1-Click onboarding script untuk laptop tim
+├── setup.sh                             # ⚡ 1-Click onboarding script untuk Linux & macOS
+├── setup.ps1                            # 🪟 1-Click onboarding script untuk Windows PowerShell
 ├── .gitignore                           # 🛡️ Git ignore list (target/, temp/, secrets)
 │
 ├── docs/                                # 📚 Dokumentasi Lengkap Proyek
@@ -87,7 +88,8 @@ gspexgrok-agent/
 
 | Perintah | Deskripsi | Lokasi File |
 | :--- | :--- | :--- |
-| `./setup.sh` | Onboarding 1-Click untuk laptop developer baru | [setup.sh](setup.sh) |
+| `./setup.sh` | Onboarding 1-Click untuk Linux & macOS | [setup.sh](setup.sh) |
+| `.\setup.ps1` | Onboarding 1-Click untuk Windows PowerShell | [setup.ps1](setup.ps1) |
 | `./server-optimize.sh` | Menjalankan `llama-server` multi-user di host GPU | [server-optimize.sh](server-optimize.sh) |
 | `./test/run_stress_test.sh` | Menjalankan stress test & benchmark multi-stream | [test/run_stress_test.sh](test/run_stress_test.sh) |
 | `python3 scripts/standardize.py` | Menjalankan wizard standarisasi adaptif | [scripts/standardize.py](scripts/standardize.py) |
