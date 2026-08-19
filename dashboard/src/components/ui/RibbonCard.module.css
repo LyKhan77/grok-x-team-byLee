@@ -1,0 +1,40 @@
+.card {
+  border: 1px solid var(--color-frame-ink);
+  border-radius: var(--rounded-none);
+  overflow: hidden;
+}
+
+/* ── Eyebrow Tint Variants ── */
+.eyebrow {
+  padding: var(--spacing-xxl) var(--spacing-lg);
+  color: var(--color-ink);
+}
+.eyebrow_periwinkle { background-color: var(--color-tint-periwinkle); }
+.eyebrow_steel      { background-color: var(--color-tint-steel); }
+.eyebrow_salmon     { background-color: var(--color-tint-salmon); }
+.eyebrow_lime       { background-color: var(--color-tint-lime); }
+.eyebrow_peach      { background-color: var(--color-tint-peach); }
+.eyebrow_sage       { background-color: var(--color-tint-sage); }
+.eyebrow_olive      { background-color: var(--color-tint-olive); }
+.eyebrow_sky        { background-color: var(--color-tint-sky); }
+
+/* ── Title Bar ── */
+.titleBar {
+  background-color: var(--color-canvas);
+  padding: var(--spacing-s) var(--spacing-md);
+  border-bottom: 1px solid var(--color-frame-ink);
+}
+
+/* ── Body Tint Variants ── */
+.body {
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--color-ink);
+}
+.body_periwinkle { background-color: var(--color-tint-periwinkle); }
+.body_steel      { background-color: var(--color-tint-steel); }
+.body_salmon     { background-color: var(--color-tint-salmon); }
+.body_lime       { background-color: var(--color-tint-lime); }
+.body_peach      { background-color: var(--color-tint-peach); }
+.body_sage       { background-color: var(--color-tint-sage); }
+.body_olive      { background-color: var(--color-tint-olive); }
+.body_sky        { background-color: var(--color-tint-sky); }

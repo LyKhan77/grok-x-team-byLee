@@ -1,0 +1,48 @@
+.rail {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.navGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-frame-ink);
+  background-color: var(--color-canvas);
+}
+
+.navItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.navIcon {
+  font-size: 24px;
+}
+
+.sessionsSummary {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid var(--color-frame-ink);
+  background-color: var(--color-canvas);
+}
+
+.sessionCount {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+}
+
+.bigNumber {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1.0;
+}

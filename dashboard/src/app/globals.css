@@ -1,0 +1,148 @@
+/* ============================================================
+   DESIGN TOKENS — 1996 Catalog-Era Enterprise Web Design
+   Source: dashboard/DESIGN.md (Dell December 1996)
+   ============================================================ */
+
+:root {
+  /* ── Brand & Accent ── */
+  --color-primary: #e91d2a;          /* Dell Red — CTA panel & phone callout only */
+  --color-yellow-sticker: #fcc20f;   /* Sticker yellow — BUY a DELL / NEW! bursts */
+  --color-purple-stripe: #6a26a4;    /* Purple accent stripe (sticker chrome) */
+
+  /* ── Surface ── */
+  --color-frame-ink: #000000;        /* Page frame, banner, borders, dividers */
+  --color-canvas: #ffffff;           /* White page surface inside frame */
+
+  /* ── Text ── */
+  --color-ink: #000000;              /* Body text, headings */
+  --color-on-primary: #ffffff;       /* Text on Dell Red surfaces */
+  --color-link: #0000ee;             /* Netscape 3.x default link blue */
+
+  /* ── Ribbon-Card Tint Family ── */
+  --color-tint-olive: #8e8a25;
+  --color-tint-sage: #b3bd95;
+  --color-tint-salmon: #d77a7a;
+  --color-tint-peach: #e6915d;
+  --color-tint-lime: #c0d4a7;
+  --color-tint-sky: #9ab6c8;
+  --color-tint-steel: #a5b8c0;
+  --color-tint-periwinkle: #8c9ae0;
+
+  /* ── Typography ── */
+  --font-display: 'Arial Black', Helvetica, system-ui, sans-serif;
+  --font-ui: Helvetica, Arial, system-ui, sans-serif;
+  --font-body: 'Times New Roman', Times, serif;
+
+  /* ── Spacing (4px base) ── */
+  --spacing-xxs: 2px;
+  --spacing-xs: 4px;
+  --spacing-s: 6px;
+  --spacing-sm: 8px;
+  --spacing-m: 10px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-xxl: 24px;
+  --spacing-section-sm: 32px;
+  --spacing-section: 40px;
+  --spacing-section-lg: 48px;
+
+  /* ── Elevation ── */
+  --border-hairline: 1px solid var(--color-frame-ink);
+  --border-frame: 8px solid var(--color-frame-ink);
+
+  /* ── Shapes ── */
+  --rounded-none: 0px;
+  --rounded-full: 9999px;
+}
+
+/* ── Global Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-ink);
+  background-color: var(--color-frame-ink);
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: underline;
+}
+
+/* ── Typography Classes ── */
+.typo-display {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1.0;
+  text-transform: uppercase;
+}
+
+.typo-h1 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.typo-h2 {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.typo-h3 {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.typo-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.typo-body-sm {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.typo-caption {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.typo-button {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.0;
+  text-transform: uppercase;
+}
+
+.typo-ui-label {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.0;
+  text-transform: uppercase;
+}

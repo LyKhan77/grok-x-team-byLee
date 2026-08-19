@@ -1,0 +1,20 @@
+.panel {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  border: 1px solid var(--color-frame-ink);
+  padding: var(--spacing-lg);
+  border-radius: var(--rounded-none);
+}
+
+.copy {
+  color: var(--color-on-primary);
+}
+
+.mockBadge {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-yellow-sticker);
+  color: var(--color-ink);
+  border: 1px solid var(--color-frame-ink);
+  display: inline-block;
+}

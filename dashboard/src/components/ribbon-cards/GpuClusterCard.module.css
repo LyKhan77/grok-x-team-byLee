@@ -1,0 +1,28 @@
+.gpuGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .gpuGrid { grid-template-columns: 1fr; }
+}
+
+.gpuPanel {
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-frame-ink);
+  padding: var(--spacing-md);
+}
+
+.gpuHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.gpuMetrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}

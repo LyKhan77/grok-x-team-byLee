@@ -1,0 +1,25 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.track {
+  flex: 1;
+  height: 14px;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-frame-ink);
+  border-radius: var(--rounded-none);
+}
+
+.fill {
+  height: 100%;
+  background-color: var(--color-frame-ink);
+  border-radius: var(--rounded-none);
+  transition: width 0.3s ease;
+}
+
+.label {
+  min-width: 48px;
+  text-align: right;
+}

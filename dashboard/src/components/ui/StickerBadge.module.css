@@ -1,0 +1,14 @@
+.sticker {
+  display: inline-block;
+  background-color: var(--color-yellow-sticker);
+  color: var(--color-ink);
+  padding: 4px 8px;
+  border: 1px solid var(--color-frame-ink);
+  border-radius: var(--rounded-none);
+  /* Hard-edge bevel: 1px highlight + 1px outline per DESIGN.md Level 3 */
+  box-shadow: 1px 1px 0 var(--color-frame-ink), -1px -1px 0 var(--color-canvas);
+}
+
+.rotated {
+  transform: rotate(-15deg);
+}

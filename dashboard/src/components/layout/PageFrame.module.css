@@ -1,0 +1,12 @@
+.frame {
+  border: 8px solid var(--color-frame-ink);
+  background-color: var(--color-canvas);
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .frame { border-width: 4px; }
+}
+@media (max-width: 480px) {
+  .frame { border-width: 2px; }
+}
