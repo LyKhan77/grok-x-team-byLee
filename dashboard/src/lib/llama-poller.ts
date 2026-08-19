@@ -1,19 +1,17 @@
 import { SlotsSummary, SlotDetail, CompletedTask } from './types';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 const LLAMA_URL = process.env.LLAMA_SERVER_URL || 'http://192.168.2.143:8001';
 const TIMEOUT_MS = 3000;
 
-// Use global to persist across Next.js dev reloads
+// Global persistent state across Next.js dev reloads
 const globalPoller = global as unknown as {
   slotStates: Map<number, { timestamp: number; startTimestamp: number; n_decoded: number; clientIp?: string }>;
   totalTokens: number;
-  pendingIps: string[];
   completedTasks: CompletedTask[];
 };
-
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
 
 if (!globalPoller.slotStates) {
   globalPoller.slotStates = new Map();
@@ -21,32 +19,41 @@ if (!globalPoller.slotStates) {
   globalPoller.completedTasks = [];
 }
 
-const getPendingIpsFile = () => path.join(os.tmpdir(), 'gspexgrok_pending_ips.json');
+const getClientsFile = () => path.join(os.tmpdir(), 'gspexgrok_active_clients.json');
 
-export function registerClientIp(ip: string) {
+export function registerClientIp(clientIdentifier: string) {
   try {
-    const file = getPendingIpsFile();
-    let ips: string[] = [];
+    const file = getClientsFile();
+    let clients: { client: string; timestamp: number }[] = [];
     if (fs.existsSync(file)) {
-      ips = JSON.parse(fs.readFileSync(file, 'utf8'));
+      try {
+        clients = JSON.parse(fs.readFileSync(file, 'utf8'));
+      } catch (e) {
+        clients = [];
+      }
     }
-    ips.push(ip);
-    if (ips.length > 50) ips.shift();
-    fs.writeFileSync(file, JSON.stringify(ips));
+    // Prepend latest client
+    clients.unshift({ client: clientIdentifier, timestamp: Date.now() });
+    // Keep last 30 requests
+    if (clients.length > 30) clients = clients.slice(0, 30);
+    fs.writeFileSync(file, JSON.stringify(clients));
   } catch (e) {
-    console.error('Failed to register IP', e);
+    console.error('Failed to register client:', e);
   }
 }
 
-function shiftClientIp(): string {
+function getLatestClient(slotIndex: number): string {
   try {
-    const file = getPendingIpsFile();
+    const file = getClientsFile();
     if (fs.existsSync(file)) {
-      let ips: string[] = JSON.parse(fs.readFileSync(file, 'utf8'));
-      const ip = ips.shift();
-      if (ip) {
-        fs.writeFileSync(file, JSON.stringify(ips));
-        return ip;
+      const clients: { client: string; timestamp: number }[] = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const now = Date.now();
+      // Look for any request registered in the last 15 minutes (long-task friendly)
+      const valid = clients.filter(c => now - c.timestamp < 15 * 60 * 1000);
+      if (valid.length > 0) {
+        // Pick client based on slot index or latest
+        const picked = valid[slotIndex % valid.length];
+        return picked ? picked.client : valid[0].client;
       }
     }
   } catch (e) {}
@@ -93,7 +100,7 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
       request_type = 'Quick Q&A';
     }
 
-    // Extract n_decoded. In newer llama.cpp, it's inside next_token array.
+    // Extract n_decoded
     let n_decoded = slot.n_decoded ?? slot.tokens_predicted ?? 0;
     if (slot.next_token && Array.isArray(slot.next_token) && slot.next_token.length > 0) {
       n_decoded = slot.next_token[0].n_decoded ?? n_decoded;
@@ -101,14 +108,17 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
 
     let tps = 0;
     let duration_ms = 0;
-    let clientIp = 'Unknown IP';
+    let clientIp = 'Unknown';
     const prevState = globalPoller.slotStates.get(id);
 
     if (isProcessing) {
       let startTimestamp = now;
       if (prevState) {
         startTimestamp = prevState.startTimestamp;
-        clientIp = prevState.clientIp || 'Unknown IP';
+        clientIp = prevState.clientIp && prevState.clientIp !== 'Direct/Unknown' 
+          ? prevState.clientIp 
+          : getLatestClient(id);
+        
         const deltaTokens = n_decoded - prevState.n_decoded;
         const deltaMs = now - prevState.timestamp;
         
@@ -116,32 +126,30 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
           tps = deltaTokens / (deltaMs / 1000);
           globalPoller.totalTokens += deltaTokens;
         } else if (deltaTokens < 0) {
-          // Reset (new request started in the same slot)
           globalPoller.totalTokens += n_decoded;
-          startTimestamp = now; // reset start time too
-          clientIp = shiftClientIp();
+          startTimestamp = now;
+          clientIp = getLatestClient(id);
         }
       } else {
-        // First time we see it processing
         globalPoller.totalTokens += n_decoded;
-        clientIp = shiftClientIp();
+        clientIp = getLatestClient(id);
       }
       
       duration_ms = now - startTimestamp;
-
-      // Cap TPS to avoid crazy spikes on first poll
       if (tps > 200) tps = 0;
 
       globalPoller.slotStates.set(id, { timestamp: now, startTimestamp, n_decoded, clientIp });
     } else {
       // Idle
       if (prevState) {
-        // A task just finished, record it to history
         const finalTps = prevState.n_decoded / Math.max((now - prevState.startTimestamp) / 1000, 1);
-        
+        const resolvedClient = prevState.clientIp && prevState.clientIp !== 'Direct/Unknown'
+          ? prevState.clientIp
+          : getLatestClient(id);
+
         globalPoller.completedTasks.unshift({
           task_id: slot.id_task ? String(slot.id_task) : '?',
-          client: prevState.clientIp || 'Unknown',
+          client: resolvedClient,
           timestamp: now,
           duration_ms: now - prevState.startTimestamp,
           tokens_generated: prevState.n_decoded,
@@ -150,7 +158,6 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
           request_type: request_type
         });
 
-        // Cap history to 50 items
         if (globalPoller.completedTasks.length > 50) {
           globalPoller.completedTasks.pop();
         }
@@ -158,7 +165,6 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
       globalPoller.slotStates.delete(id);
     }
 
-    // Determine final client string format
     const finalClient = isProcessing 
       ? `${clientIp} (Task #${slot.id_task || '?'})`
       : '-';
