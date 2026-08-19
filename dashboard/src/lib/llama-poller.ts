@@ -11,19 +11,45 @@ const globalPoller = global as unknown as {
   completedTasks: CompletedTask[];
 };
 
+import fs from 'fs';
+import path from 'path';
+
 if (!globalPoller.slotStates) {
   globalPoller.slotStates = new Map();
   globalPoller.totalTokens = 0;
-  globalPoller.pendingIps = [];
   globalPoller.completedTasks = [];
 }
 
+const getPendingIpsFile = () => path.resolve(process.cwd(), '../data/pending_ips.json');
+
 export function registerClientIp(ip: string) {
-  globalPoller.pendingIps.push(ip);
-  // Keep queue bounded to prevent memory leaks
-  if (globalPoller.pendingIps.length > 50) {
-    globalPoller.pendingIps.shift();
+  try {
+    const file = getPendingIpsFile();
+    let ips: string[] = [];
+    if (fs.existsSync(file)) {
+      ips = JSON.parse(fs.readFileSync(file, 'utf8'));
+    }
+    ips.push(ip);
+    if (ips.length > 50) ips.shift();
+    fs.writeFileSync(file, JSON.stringify(ips));
+  } catch (e) {
+    console.error('Failed to register IP', e);
   }
+}
+
+function shiftClientIp(): string {
+  try {
+    const file = getPendingIpsFile();
+    if (fs.existsSync(file)) {
+      let ips: string[] = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const ip = ips.shift();
+      if (ip) {
+        fs.writeFileSync(file, JSON.stringify(ips));
+        return ip;
+      }
+    }
+  } catch (e) {}
+  return 'Direct/Unknown';
 }
 
 async function fetchWithTimeout(url: string): Promise<Response> {
@@ -92,12 +118,12 @@ export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: num
           // Reset (new request started in the same slot)
           globalPoller.totalTokens += n_decoded;
           startTimestamp = now; // reset start time too
-          clientIp = globalPoller.pendingIps.shift() || 'Direct/Unknown';
+          clientIp = shiftClientIp();
         }
       } else {
         // First time we see it processing
         globalPoller.totalTokens += n_decoded;
-        clientIp = globalPoller.pendingIps.shift() || 'Direct/Unknown';
+        clientIp = shiftClientIp();
       }
       
       duration_ms = now - startTimestamp;
