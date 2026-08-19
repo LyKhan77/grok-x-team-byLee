@@ -9,7 +9,11 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     // 1. Extract Client IP
-    let ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'Unknown IP';
+    let ip = req.headers.get('x-forwarded-for') || 
+             req.headers.get('x-real-ip') || 
+             req.headers.get('remote-addr') || 
+             'Local/Direct';
+    
     if (ip.includes(',')) {
       ip = ip.split(',')[0].trim();
     }
