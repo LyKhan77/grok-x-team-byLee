@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Script: High-Concurrency Multi-User Server Launcher for Team (5 Developers)
+# Script: High-Concurrency Multi-User Server Launcher (5 Developers & 256K Context)
+# Hybrid Sampling: Min-P 0.05, Repeat Penalty 1.10, Top-K 20, Top-P 0.85
 # ==============================================================================
 set -e
 
@@ -9,21 +10,23 @@ MODEL_PATH="/home/gspe-ai1/models/qwen38-27b/Qwen3.8-27B-Q8_0.gguf"
 MMPROJ_PATH="/home/gspe-ai1/models/qwen38-27b/mmproj-BF16.gguf"
 BIN_PATH="/home/gspe-ai1/llama.cpp/build/bin/llama-server"
 
-# Parameter Multi-User Concurrency & Long-Task
-# --parallel 5: Mengizinkan 5 request/developer aktif bersamaan (Zero queue wait)
+# Parameter Multi-User Concurrency & High-Precision Hybrid Sampling
+# --ctx-size 262144: 256K total context (~52.4K dedicated tokens per slot)
+# --parallel 5: Mengizinkan 5 developer aktif bersamaan (Zero queue wait)
 # --n-predict -1: Unlimited output generation (dibatasi oleh context window)
-# --flash-attn: Flash Attention untuk efisiensi VRAM KV-Cache
+# --flash-attn on: Flash Attention untuk efisiensi VRAM KV-Cache
 # --cache-type-k q8_0 --cache-type-v q8_0: Kuantisasi KV-Cache hemat 50% memori VRAM
-# --tensor-split 1,1,1: Distribusi seimbang di 3x GPU RTX 3090
+# --temp 0.70 --top-p 0.85 --top-k 20 --min-p 0.05: Anti-halusinasi & thinking straight
+# --repeat-penalty 1.10 --presence-penalty 0.1: Anti-looping proses CoT
 
-echo "Memulai llama-server High-Concurrency Multi-User (5 Devs & Long-Task Ready)..."
+echo "Memulai llama-server High-Concurrency Multi-User (256K Context & Hybrid Sampling)..."
 
 CUDA_VISIBLE_DEVICES=0,1,2 $BIN_PATH \
   --model "$MODEL_PATH" \
   --mmproj "$MMPROJ_PATH" \
   --alias qwen35 \
   --jinja \
-  --ctx-size 131072 \
+  --ctx-size 262144 \
   --n-predict -1 \
   --gpu-layers 999 \
   --tensor-split 1,1,1 \
@@ -34,5 +37,11 @@ CUDA_VISIBLE_DEVICES=0,1,2 $BIN_PATH \
   --flash-attn on \
   --cache-type-k q8_0 \
   --cache-type-v q8_0 \
+  --temp 0.70 \
+  --top-p 0.85 \
+  --top-k 20 \
+  --min-p 0.05 \
+  --repeat-penalty 1.10 \
+  --presence-penalty 0.1 \
   --host 0.0.0.0 \
   --port 8001

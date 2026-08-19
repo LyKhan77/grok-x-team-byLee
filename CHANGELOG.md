@@ -11,9 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **LLM Telemetry & Monitoring Dashboard PRD (`dashboard/PRD.md`):** Penyusunan Product Requirement Document resmi untuk web dashboard monitoring LLM berbasis Next.js, SQLite, dan kepatuhan penuh terhadap 1996 Catalog-Era Design System (`dashboard/DESIGN.md`).
+- **Hybrid High-Precision Sampling Configuration:** Mengaktifkan kombinasi parameter sampling anti-halusinasi dan anti-looping (`min-p 0.05`, `repeat-penalty 1.10`, `top-k 20`, `top-p 0.85`, `presence-penalty 0.1`) pada `server-optimize.sh`, `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh`.
+- **256K Context Window Upgrade:** Meningkatkan total context server ke `262,144 tokens` (memberikan ~52.4K token dedicated per slot pada 5 developer bersamaan) untuk menjamin eksekusi long-task dan multi-turn reasoning `xhigh` tanpa terpotong.
 
 ### Fixed
-- **Token Output Limit Truncation Fix:** Meningkatkan `max_completion_tokens` dan `max_tokens` dari `8192` menjadi `32768` (dan opsi 64K) pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` untuk mendukung generasi kode berskala besar (misal game 3D / arsitektur kompleks) tanpa terpotong (*Response truncated*).
+- **Token Output Limit Truncation Fix:** Meningkatkan `max_completion_tokens` dan `max_tokens` dari `8192` menjadi `65536` pada `~/.grok/config.toml`, `config.default.toml`, dan `setup.sh` untuk mendukung generasi kode berskala besar tanpa terpotong.
 - **Modular Generation Rule:** Menambahkan prinsip *Modular Tool-First Generation* pada `.agents/rules/00-project-context.md` agar agent menulis kode modular bertahap langsung ke file.
 
 ---

@@ -5,10 +5,22 @@ __pycache__/
 
 # Environments
 .env
+.env*.local
 .venv
 env/
 venv/
 ENV/
+
+# Node.js & Next.js
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
 
 # Rust build artifacts
 target/
@@ -24,8 +36,11 @@ temp/*
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs & Databases
 *.log
+*.sqlite
+*.db
+data/
 
 # Sensitive Credentials
 *.pem
