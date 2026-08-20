@@ -182,6 +182,8 @@ if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
     
     $baseV1 = "$BASE_HOST/v1"
 
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+
     # A. Write ~/.pi/agent/models.json (Official pi.dev model definition)
     $MODELS_JSON = Join-Path $PI_AGENT_DIR "models.json"
     $modelsObj = [ordered]@{
@@ -202,14 +204,14 @@ if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
             }
         }
     }
-    [System.IO.File]::WriteAllText($MODELS_JSON, ($modelsObj | ConvertTo-Json -Depth 5), [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText($MODELS_JSON, ($modelsObj | ConvertTo-Json -Depth 5), $utf8NoBom)
 
     # B. Write ~/.pi/agent/settings.json (Default model selection for pi.dev)
     $SETTINGS_JSON = Join-Path $PI_AGENT_DIR "settings.json"
     $settingsObj = [ordered]@{
         defaultModel = "cooperagent/$DEFAULT_MODEL_NAME"
     }
-    [System.IO.File]::WriteAllText($SETTINGS_JSON, ($settingsObj | ConvertTo-Json -Depth 3), [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText($SETTINGS_JSON, ($settingsObj | ConvertTo-Json -Depth 3), $utf8NoBom)
 
     Write-Host "[v] Konfigurasi resmi pi.dev tersimpan di: $MODELS_JSON" -ForegroundColor Green
 
