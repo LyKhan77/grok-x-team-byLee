@@ -130,13 +130,28 @@ EOF
     echo -e "${GREEN}✔ Konfigurasi Grok tersimpan di: ${CONFIG_FILE}${NC}"
 fi
 
-# 6. Konfigurasi Pi Agent (jika opsi 2 atau 3)
+# 6. Konfigurasi Pi Agent (pi.dev) (jika opsi 2 atau 3)
 if [ "$AGENT_CHOICE" == "2" ] || [ "$AGENT_CHOICE" == "3" ]; then
-    echo -e "\n${CYAN}--- Mengonfigurasi Pi Agent (Lightweight CLI) ---${NC}"
+    echo -e "\n${CYAN}--- Mengonfigurasi Pi Agent (pi.dev) ---${NC}"
+    
+    # 1. Coba install official pi.dev package via npm jika npm tersedia
+    if command -v npm &> /dev/null; then
+        echo -e "${YELLOW}Memeriksa / Menginstall official Pi Agent (@earendil-works/pi-coding-agent)...${NC}"
+        npm install -g --ignore-scripts @earendil-works/pi-coding-agent 2>/dev/null || true
+    fi
+
     mkdir -p "$HOME/.pi"
     PI_CONFIG="$HOME/.pi/config.json"
     cat <<EOF > "$PI_CONFIG"
 {
+  "defaultProvider": "openai",
+  "providers": {
+    "openai": {
+      "baseUrl": "${SERVER_URL%/api/v1}/v1",
+      "apiKey": "dev-${DEV_NAME}",
+      "defaultModel": "${DEFAULT_MODEL_NAME}"
+    }
+  },
   "provider": "openai",
   "base_url": "${SERVER_URL%/api/v1}/v1",
   "api_key": "dev-${DEV_NAME}",

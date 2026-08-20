@@ -161,10 +161,20 @@ if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
     Write-Host "[v] Konfigurasi Grok tersimpan di: $CONFIG_FILE" -ForegroundColor Green
 }
 
-# 6. Konfigurasi Pi Agent (jika opsi 2 atau 3)
+# 6. Konfigurasi Pi Agent (pi.dev) (jika opsi 2 atau 3)
 if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
     Write-Host ""
-    Write-Host "--- Mengonfigurasi Pi Agent (Lightweight CLI) ---" -ForegroundColor Cyan
+    Write-Host "--- Mengonfigurasi Pi Agent (pi.dev) ---" -ForegroundColor Cyan
+
+    # 1. Coba install official pi.dev package via npm jika npm tersedia
+    if (Get-Command "npm" -ErrorAction SilentlyContinue) {
+        Write-Host "Memeriksa / Menginstall official Pi Agent (@earendil-works/pi-coding-agent)..." -ForegroundColor Yellow
+        try {
+            npm install -g --ignore-scripts @earendil-works/pi-coding-agent 2>$null
+            Write-Host "[v] Official Pi Agent (pi.dev) terpasang via npm." -ForegroundColor Green
+        } catch {}
+    }
+
     $PI_DIR = Join-Path $env:USERPROFILE ".pi"
     if (-not (Test-Path $PI_DIR)) {
         New-Item -ItemType Directory -Path $PI_DIR -Force | Out-Null
@@ -173,6 +183,14 @@ if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
     $baseV1 = "$BASE_HOST/v1"
     
     $piObj = [ordered]@{
+        defaultProvider = "openai"
+        providers = [ordered]@{
+            openai = [ordered]@{
+                baseUrl = $baseV1
+                apiKey = "dev-$DEV_NAME"
+                defaultModel = $DEFAULT_MODEL_NAME
+            }
+        }
         provider = "openai"
         base_url = $baseV1
         api_key = "dev-$DEV_NAME"
@@ -184,12 +202,14 @@ if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
     [System.IO.File]::WriteAllText($PI_CONFIG, $piContent, [System.Text.Encoding]::UTF8)
     Write-Host "[v] Konfigurasi Pi Agent tersimpan di: $PI_CONFIG" -ForegroundColor Green
 
-    # Pasang wrapper executable pi.cmd & pi.ps1
-    $piScript = Join-Path $SCRIPT_DIR "scripts\pi_agent.py"
-    if (Test-Path $piScript) {
-        $piCmd = "@echo off" + "`r`n" + "python `"$piScript`" %*"
-        [System.IO.File]::WriteAllText((Join-Path $LOCAL_BIN "pi.cmd"), $piCmd, [System.Text.Encoding]::ASCII)
-        Write-Host "[v] Executable CLI 'pi' berhasil dipasang ke PATH." -ForegroundColor Green
+    # Pasang fallback launcher jika binary pi belum terdeteksi
+    if (-not (Get-Command "pi" -ErrorAction SilentlyContinue)) {
+        $piScript = Join-Path $SCRIPT_DIR "scripts\pi_agent.py"
+        if (Test-Path $piScript) {
+            $cmdText = "@echo off" + "`r`n" + "python `"$piScript`" %*"
+            [System.IO.File]::WriteAllText((Join-Path $LOCAL_BIN "pi.cmd"), $cmdText, [System.Text.Encoding]::ASCII)
+            Write-Host "[v] Executable CLI launcher 'pi' terpasang ke PATH." -ForegroundColor Green
+        }
     }
 }
 
