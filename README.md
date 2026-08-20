@@ -10,7 +10,7 @@ Repository: **`https://github.com/LyKhan77/grok-x-team-byLee.git`**
 
 | Kode Seri Modul | Deskripsi & Cakupan Teknis |
 | :--- | :--- |
-| **`CooperxCompute`** | Engine inferensi GPU: **4 Slots x 256K Dedicated Context (Total 1.048.576 Tokens)** dengan Speculative Acceleration & KV-Cache `q4_0` di 3x RTX 3090. |
+| **`CooperxCompute`** | Engine inferensi GPU pada 3x RTX 3090: **4 Slots paralel, live 4 x 128K context (total 524.288 token)**, KV-Cache `q4_0` & Speculative Acceleration. Target 4 x 256K sedang dikerjakan via DFLASH 2. |
 | **`CooperxMemory`** | Harness persistensi memori mandiri berbasis riset **Claude Code** & **Hermes Agent** (*Continuous State Checkpoint* $\rightarrow$ *90% Context Warning Handover Card* $\rightarrow$ *Instant 0-Token Rehydration*). |
 | **`CooperxHarness`** | Dukungan multi-agent fleksibel yang mengintegrasikan **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di [`setup.sh`](setup.sh) & [`setup.ps1`](setup.ps1). |
 | **`CooperxTelemetry`** | API Gateway (Port `8987`) dan SQLite Token Usage Leaderboard & Slot Visualizer Dashboard. |

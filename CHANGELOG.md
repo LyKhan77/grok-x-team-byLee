@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔧 Koreksi Dokumentasi (2026-08-20)
+- **Koreksi klaim kapasitas context:** Entri sebelumnya menyatakan *"CooperxCompute 4 Slots x 256K Context = 1,048,576 Total Tokens"* sudah aktif. Verifikasi langsung ke mesin menunjukkan server live berjalan pada `--ctx-size 524288` (`n_ctx` 131.072/slot, yaitu **4 x 128K**). Konfigurasi 4 x 256K **belum pernah berhasil naik** — percobaan menaikkannya berakhir OOM. `AGENTS.md`, `README.md`, dan `ARCHITECTURE.md` telah dikoreksi.
+- **Koreksi baseline VRAM:** Angka 67.4 GB / 72 GB yang tercatat di plan tidak akurat; nilai terukur adalah **47.8 GB / 72 GB**.
+- **Dokumentasi launcher produksi:** Server inferensi dikelola systemd unit `llamacpp.service` (`Restart=always`) yang menjalankan `/home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh`. `server-optimize.sh` di repo **tidak dijalankan oleh apa pun** dan kini ditandai sebagai salinan referensi.
+- **Dokumentasi arsitektur model:** Qwen3.8-27B (GGUF arch `qwen35`) adalah model **hybrid SSM + Attention** — `full_attention_interval=4`, sehingga hanya 16 dari 64 layer memiliki KV cache (18 KiB/token @ `q4_0`); 48 layer sisanya memakai recurrent state berukuran tetap. Ini mengubah seluruh perhitungan kapasitas VRAM.
+
+### ⚡ DFLASH 2 Speculative Acceleration (dalam pengerjaan)
+- **Phase 1 selesai:** Drafter `incoai/Qwen3.8-27B-DFlash2-GGUF:Q4_K_M` (1.14 GB) terunduh dan terverifikasi — SHA256 cocok dengan `lfs.oid` HuggingFace, tokenizer (`qwen35`, 248.320 vocab) dan `embedding_length` 5120 identik dengan target. `dflash.block_size=8` mengonfirmasi `--spec-draft-n-max 7`.
+- **Blocker teridentifikasi & teratasi:** Build produksi (`master @ 25ae3a9b3`) hanya mendukung DFlash **1** sehingga gagal memuat drafter (`wrong number of tensors; expected 81, got 58`). Dukungan DFlash 2 ada di [PR #27342](https://github.com/ggml-org/llama.cpp/pull/27342) yang masih *open*. Build terpisah dari PR tersebut disiapkan di `/home/gspe-ai1/llama.cpp-dflash2` tanpa menyentuh binary produksi.
+- **Temuan VRAM:** Kegagalan 1M context berasal dari KV cache **F16** drafter lama (Qwen2.5-Coder-0.5B) sebesar 12.288 MiB yang seluruhnya ditumpuk di CUDA0, bukan dari model target. Drafter DFLASH 2 memakai SWA window 2048 sehingga KV-nya hanya ~0.17 GiB — sehingga 1M context dan DFLASH 2 merupakan satu paket perubahan.
+
 - **DFLASH 2 Speculative Acceleration Plan:** Penyusunan master plan integrasi teknologi *Parallel Speculative Drafter* Inco AI DFLASH 2 (`incoai/Qwen3.8-27B-DFlash2-GGUF`) untuk melipatgandakan kecepatan decoding dari ~27 TPS ke **~70–90+ TPS per user** (2.7x–3.4x speedup) dengan preservasi 100% lossless output pada 4 Slots x 256K Context.
 - **Official Pi Agent (`pi.dev`) Integration & UTF-8 Encoding Fix:** Integrasi resmi package `@earendil-works/pi-coding-agent` (pi v0.84.2) pada `setup.ps1` dan `setup.sh` dengan generator konfigurasi resmi `~/.pi/agent/models.json` dan `settings.json` berformat UTF-8 murni tanpa BOM untuk mencegah parser error Node.js di Windows.
 - **Windows PowerShell 5.1 ASCII Hardening:** Menghilangkan seluruh karakter multibyte Unicode emoji dari `setup.ps1` untuk menjamin kompatibilitas 100% pada sistem operasi Windows 10/11 default.

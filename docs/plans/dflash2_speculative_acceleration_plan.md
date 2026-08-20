@@ -4,87 +4,164 @@
 > **Target Hardware:** 3x NVIDIA GeForce RTX 3090 (72 GB VRAM) + Intel Core Ultra 7 265  
 > **Ecosystem:** CooperAgent  
 > **Source Reference:** [Inco AI DFLASH 2 Research (August 2026)](https://inco.ai/blog/dflash2/)  
+> **Status:** Phase 1 ✅ selesai · Phase 2 🔴 terblokir pada build llama.cpp · Revisi 2026-08-20
 
 ---
 
 ## 1. Executive Summary & Goals
 
-Platform **CooperAgent** saat ini berjalan pada model foundation **Qwen3.8-27B Q8_0** dengan kecepatan *autoregressive decoding* tunggal sekitar **~27 TPS**. 
+Platform **CooperAgent** berjalan pada model foundation **Qwen3.8-27B Q8_0** dengan kecepatan *autoregressive decoding* tunggal sekitar **~27 TPS**.
 
-Melalui integrasi teknologi **DFLASH 2** dari Inco AI:
-1. **Parallel Speculative Drafting:** Memprediksi 5–8 token sekaligus dalam 1 forward pass paralel (*Diffusion-Style Drafting*).
-2. **Peningkatan Throughput:** Menaikkan kecepatan generasi kode menjadi **~70 – 90+ TPS per user** (peningkatan **2.7× – 3.3× lipat**).
-3. **Zero Lossless Verification:** Output diverifikasi secara deterministik oleh target model Qwen 3.8 27B sehingga **100% identik secara logika**.
-4. **Preservasi 4 Slots x 256K Context:** Tetap mempertahankan **1.048.576 Total Context Window** di cluster 3x RTX 3090 tanpa risiko OOM.
+Melalui integrasi **DFLASH 2** dari Inco AI:
+1. **Parallel Block Drafting:** memprediksi satu blok token sekaligus dalam 1 forward pass (*block diffusion*), dengan *candidate path selector* menelusuri satu jalur koheren.
+2. **Peningkatan Throughput:** target **~70 – 90+ TPS per user**.
+3. **Lossless Verification:** output greedy identik dengan target model; sampling mempertahankan distribusinya.
+4. **Membuka jalan ke 4 Slots x 256K:** DFLASH 2 justru **menghemat** VRAM dibanding drafter lama (lihat §2.3) — 1M context dan DFLASH 2 adalah satu paket, bukan dua langkah terpisah.
 
 ---
 
-## 2. Technical Architecture & Component Mapping
+## 2. Ground Truth Mesin (diverifikasi 2026-08-20)
+
+### 2.1 Launcher produksi
+Server dikelola **systemd**, bukan dijalankan manual:
+
+```ini
+# /etc/systemd/system/llamacpp.service
+ExecStart=/home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh
+Restart=always
+RestartSec=5
+```
+
+File yang harus diedit untuk mengubah config produksi adalah **`run-qwen.sh`**. `server-optimize.sh` di repo tidak dijalankan oleh apa pun. `kill` manual percuma — gunakan `systemctl`.
+
+⚠️ Drop-in `llamacpp.service.d/override.conf` menyetel `CUDA_VISIBLE_DEVICES=0,1` (2 GPU). Saat ini tertutup oleh assignment inline `0,1,2` di `run-qwen.sh`.
+
+### 2.2 Qwen3.8-27B adalah model hybrid SSM + Attention
+
+```
+qwen35.block_count             = 65   (blk.64 = MTP head, unused)
+qwen35.full_attention_interval = 4    → hanya 16 dari 64 layer punya KV cache
+qwen35.ssm.state_size          = 128  → 48 layer sisanya recurrent, ukuran TETAP
+qwen35.attention.head_count_kv = 4 ; key_length = 256
+```
+
+**KV target @ q4_0 = 18 KiB/token.** 524.288 ctx → 9.0 GiB · 1.048.576 ctx → 18.0 GiB.
+
+### 2.3 Kenapa 1M sebelumnya gagal
+
+Percobaan `--ctx-size 1048576` dengan drafter lama menghasilkan:
+
+```
+E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 12288.00 MiB on device 0: cudaMalloc failed: out of memory
+```
+
+12.288 MiB = persis KV **F16** drafter Qwen2.5-Coder-0.5B pada 1M token, seluruhnya di CUDA0. Drafter DFLASH 2 memakai **SWA window 2048** pada kelima layer ⇒ KV-nya hanya **~0.17 GiB**.
+
+| Komponen | VRAM |
+| :--- | ---: |
+| Baseline live terukur (512K + draft-simple) | **47.8 GB** |
+| ➕ KV target 512K → 1M | +9.0 GiB |
+| ➖ Buang Qwen2.5-Coder-0.5B (0.63 bobot + ~6.0 KV F16) | −6.6 GiB |
+| ➕ Bobot DFlash2 Q4_K_M | +1.1 GiB |
+| ➕ KV DFlash2 (SWA 2048) | +0.2 GiB |
+| **Proyeksi total** | **≈ 51.5 GiB / 72 GiB** |
+
+*Proyeksi, belum terukur — verifikasi setelah build PR selesai.*
+
+---
+
+## 3. Technical Architecture & Component Mapping
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────┐
 │                    COOPERXCOMPUTE + DFLASH 2 ARCHITECTURE                     │
 ├───────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
-│  [Target Model (Foundation)] : Qwen3.8-27B-Q8_0.gguf (~29.03 GB)             │
-│  [Draft Model (Accelerator)] : incoai/Qwen3.8-27B-DFlash2-Q4_K_M.gguf (~1.8GB)│
-│  [Path Selector Engine]      : 256-dim Bilinear Attention (+2.0M params)      │
-│  [Context Allocation]        : 4 Slots x 256K Context Window (q4_0 KV-Cache)  │
-│  [VRAM Offload Strategy]     : --tensor-split 1,1,1 di 3x RTX 3090            │
+│  [Target Model]   Qwen3.8-27B-Q8_0.gguf  (~29.03 GB, arch `qwen35`, hybrid)   │
+│                   65 blok: 16 full-attention (KV) + 48 SSM (state tetap)      │
+│  [Draft Model]    Qwen3.8-27B-DFlash2-Q4_K_M.gguf (1.14 GB, arch `dflash`)    │
+│                   5 layer · block_size 8 · SWA 2048 · selector_rank 256       │
+│                   target_layers = [6, 20, 34, 48, 62]                         │
+│  [Context]        4 Slots (target 256K/slot) · KV-Cache q4_0                  │
+│  [VRAM Strategy]  --tensor-split 1,1,1 di 3x RTX 3090                         │
 │                                                                               │
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Step-by-Step Implementation Checklist
+## 4. Step-by-Step Implementation Checklist
 
-### 📦 Phase 1: Model Acquisition & Draft Weights Preparation
-- [ ] **Task 1.1:** Unduh bobot resmi drafter `incoai/Qwen3.8-27B-DFlash2-GGUF:Q4_K_M` ke folder model `/home/gspe-ai1/models/qwen38-27b/`.
-- [ ] **Task 1.2:** Verifikasi SHA-256 dan kompatibilitas tokenizer terhadap `Qwen3.8-27B-Q8_0.gguf`.
+### ✅ 📦 Phase 1: Model Acquisition & Draft Weights Preparation — **SELESAI**
+- [x] **Task 1.1:** Unduh `incoai/Qwen3.8-27B-DFlash2-GGUF:Q4_K_M` → `/home/gspe-ai1/models/qwen38-27b/Qwen3.8-27B-DFlash2-Q4_K_M.gguf` (1.143.006.752 B).
+- [x] **Task 1.2:** Verifikasi SHA-256 & kompatibilitas tokenizer.
+  - SHA256 `18a380ef…4d0594` **cocok** dengan `lfs.oid` HuggingFace.
+  - `tokenizer.ggml.pre` = `qwen35`, n_vocab 248.320 — **identik** dengan target.
+  - `dflash.embedding_length` 5120 = target `n_embd`. `target_layers [6,20,34,48,62]` muat di 64 layer.
+  - `dflash.block_size = 8` ⇒ **`--spec-draft-n-max 7`** (= block_size − 1) adalah nilai yang benar.
 
-### 🖥️ Phase 2: Inference Engine & Runner Configuration
-- [ ] **Task 2.1:** Perbarui script [`server-optimize.sh`](server-optimize.sh) dengan parameter DFLASH 2:
+### 🔴 🛠️ Phase 2: Inference Engine — **TERBLOKIR**
+
+**Blocker:**
+```
+E llama_model_load: error loading model: done_getting_tensors: wrong number of tensors; expected 81, got 58
+```
+Build produksi `master @ 25ae3a9b3` mendukung DFlash **1**, bukan DFlash **2**. Metadata key `conv_kernel_size`, `conv_group_size`, `selector_rank`, `selector_top_k`, `block_size`, `target_layers` semuanya tidak dikenali `src/llama-arch.cpp`. Dukungan ada di **[PR #27342](https://github.com/ggml-org/llama.cpp/pull/27342)** yang **masih open, belum merged**.
+
+- [ ] **Task 2a:** Build llama.cpp dari PR #27342 di worktree terpisah `/home/gspe-ai1/llama.cpp-dflash2` (branch `pr-27342` @ `5ecbe1ac1`), agar binary produksi tidak tersentuh.
   ```bash
-  CUDA_VISIBLE_DEVICES=0,1,2 /home/gspe-ai1/llama.cpp/build/bin/llama-server \
-    --model /home/gspe-ai1/models/qwen38-27b/Qwen3.8-27B-Q8_0.gguf \
-    --model-draft /home/gspe-ai1/models/qwen38-27b/incoai/Qwen3.8-27B-DFlash2-Q4_K_M.gguf \
-    --spec-type draft-dflash \
-    --spec-draft-n-max 7 \
-    --spec-draft-n-min 2 \
-    --parallel 4 \
-    --ctx-size 1048576 \
-    --cache-type-k q4_0 \
-    --cache-type-v q4_0 \
-    --flash-attn on \
-    --ubatch-size 2048 \
-    --port 8001
+  cd /home/gspe-ai1/llama.cpp
+  git fetch origin pull/27342/head:pr-27342
+  git worktree add /home/gspe-ai1/llama.cpp-dflash2 pr-27342
+  cd /home/gspe-ai1/llama.cpp-dflash2
+  cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_CUDA_FA=ON -DGGML_NATIVE=ON
+  cmake --build build -j 12 --target llama-server
   ```
-- [ ] **Task 2.2:** Sinkronkan file runner `/home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh`.
+- [ ] **Task 2b:** Uji binary hasil build di **port 8002** dengan ctx kecil — validasi drafter ter-load (`auto-detected speculative type 'draft-dflash'`) dan acceptance rate wajar, tanpa mengganggu produksi 8001.
+- [ ] **Task 2c:** Promote ke produksi via `run-qwen.sh`. **Pertahankan seluruh flag yang sudah live** — `--mmproj`, `--alias qwen35`, `--jinja`, `--tensor-split 1,1,1`, `--gpu-layers 999`, `--host 0.0.0.0`, dan sampling params. Yang berubah hanya:
+  ```diff
+  - --spec-type draft-simple
+  - --model-draft /home/gspe-ai1/models/qwen38-27b/Qwen2.5-Coder-0.5B-Q8_0.gguf
+  - --spec-draft-n-max 8
+  + --spec-type draft-dflash
+  + --model-draft /home/gspe-ai1/models/qwen38-27b/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
+  + --spec-draft-n-max 7
+  ```
+  Catatan: **jangan** set `--spec-draft-type-k/v q4_0` — KV drafter sudah di-cap SWA 2048 (~0.17 GiB), dan F16 lebih aman untuk KV-injection DFlash.
+- [ ] **Task 2d:** Setelah DFLASH 2 stabil di 524288, naikkan `--ctx-size` ke `1048576` dan **ukur VRAM nyata** (bukan proyeksi).
+- [ ] **Task 2e:** Sinkronkan `server-optimize.sh` dengan `run-qwen.sh`, atau turunkan statusnya menjadi referensi eksplisit di `AGENTS.md`/`ARCHITECTURE.md`.
 
 ### 🧪 Phase 3: Benchmark & Throughput Verification
-- [ ] **Task 3.1:** Jalankan stress test 1 stream, 2 stream, dan 4 stream menggunakan `test/benchmark_concurrency.py`.
-- [ ] **Task 3.2:** Ukur *Acceptance Rate* (ekspektasi > 75%) dan *Real Output TPS* (target: 70–90 TPS).
-- [ ] **Task 3.3:** Simpan laporan hasil benchmark ke `test/results/benchmark_dflash2_results.json`.
+- [ ] **Task 3.1:** Stress test 1 / 2 / 4 stream via `test/benchmark_concurrency.py`.
+- [ ] **Task 3.2:** Ukur *Acceptance Length* dan *Real Output TPS*.
+- [ ] **Task 3.3:** Simpan hasil ke `test/results/benchmark_dflash2_results.json`.
 
 ### 📊 Phase 4: Telemetry & Dashboard Integration
 - [ ] **Task 4.1:** Verifikasi streaming token metrics di **CooperxTelemetry** (Port `8987`).
-- [ ] **Task 4.2:** Pastikan slot visualizer menampilkan status 4-slot dengan indikator TPS DFLASH 2.
+- [ ] **Task 4.2:** Slot visualizer menampilkan 4 slot dengan indikator TPS DFLASH 2.
 
 ### 📚 Phase 5: Documentation & Git Checkpoint
-- [ ] **Task 5.1:** Perbarui [`ARCHITECTURE.md`](ARCHITECTURE.md) dan [`AGENTS.md`](AGENTS.md) dengan modul DFLASH 2.
-- [ ] **Task 5.2:** Catat perubahan pada [`CHANGELOG.md`](CHANGELOG.md) di bawah versi `[1.3.0]`.
-- [ ] **Task 5.3:** Commit dan push ke repository remote GitHub `origin/main`.
+- [ ] **Task 5.1:** Perbarui [`ARCHITECTURE.md`](../../ARCHITECTURE.md) dan [`AGENTS.md`](../../AGENTS.md).
+- [ ] **Task 5.2:** Catat pada [`CHANGELOG.md`](../../CHANGELOG.md) di bawah versi `[1.3.0]`.
+- [ ] **Task 5.3:** Commit dan push ke `origin/main`.
 
 ---
 
-## 4. Acceptance Criteria
+## 5. Acceptance Criteria
 
-| Kriteria Pengujian | Target Baseline Saat Ini | Target dengan DFLASH 2 |
+| Kriteria Pengujian | Baseline terukur | Target dengan DFLASH 2 |
 | :--- | :--- | :--- |
 | **Single User TPS** | ~26 – 27 TPS | **≥ 70.0 TPS** |
 | **Multi-User (4 Streams) Throughput** | ~50 – 58 TPS | **≥ 120.0 TPS** |
-| **Acceptance Length** | 1.0 (N/A) | **4.5 – 6.5 tokens/pass** |
-| **Logic & Coding Accuracy** | 100% FP16 parity | **100% Parity (Zero Loss)** |
-| **Context Window Capacity** | 4 Slots x 256K | **4 Slots x 256K (1M Tokens)** |
-| **GPU VRAM Overhead** | 67.4 GB / 72 GB | **≤ 69.5 GB / 72 GB (Aman)** |
+| **Acceptance Length** | 1.0 (N/A) | **4.5 – 6.5 token/pass** *(eval resmi Q4_K_M: 5.39)* |
+| **Logic & Coding Accuracy** | 100% parity | **100% Parity (Zero Loss)** |
+| **Context Window Capacity** | **4 Slots x 128K (524.288)** | **4 Slots x 256K (1.048.576)** |
+| **GPU VRAM** | **47.8 GB / 72 GB** | **≤ 55 GB / 72 GB** *(proyeksi 51.5)* |
+
+---
+
+## 6. Rollback
+- Backup config produksi: `/home/gspe-ai1/llama.cpp/build/bin/run-qwen.pre-dflash2.bak.sh`
+- Backup script repo: [`scripts/server-optimize.pre-dflash2.bak.sh`](../../scripts/server-optimize.pre-dflash2.bak.sh)
+- Config known-good: `draft-simple` + `Qwen2.5-Coder-0.5B-Q8_0.gguf` + `--ctx-size 524288` → 47.8 GB, stabil.
+- Binary produksi `/home/gspe-ai1/llama.cpp/build/bin/` tidak pernah disentuh oleh build eksperimental.
