@@ -1,6 +1,6 @@
 # Session State — `dev-tuf`
 
-> Diperbarui: 2026-08-20T17:05+07:00  ·  Context: — (sesi agent, bukan slot inferensi)
+> Diperbarui: 2026-08-20T17:00+07:00  ·  Context: — (sesi agent, bukan slot inferensi)
 > Standar: [`.agents/rules/05-cooperx-memory.md`](../../rules/05-cooperx-memory.md)
 
 ## Session Intent
@@ -9,7 +9,7 @@ Integrasi DFLASH 2 ke CooperxCompute, mencakup akuisisi drafter, build engine, p
 ## Files Modified
 - `/home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh` — diubah — verifikasi: PASS (live, 8001 HEALTHY)
 - `server-optimize.sh` — diubah — verifikasi: PASS (diff baris flag identik dengan produksi)
-- `scripts/nmax_stats.sh` — diubah — verifikasi: PASS (kedua jalur diuji: dengan & tanpa penanda)
+- `scripts/nmax_stats.sh` — diubah — verifikasi: PASS (fallback CURRENT_NMAX diperbaiki, mengembalikan data pada rentang tanpa penanda)
 - `scripts/dflash2_nmax_sweep.sh` — diubah — verifikasi: PASS (bash -n)
 - `scripts/dflash2_promote.sh` — dibuat — verifikasi: PASS (dry-run, idempoten)
 - `scripts/cooperx_apply_tuning.sh` — dibuat — verifikasi: PASS (dry-run, idempoten)
@@ -48,12 +48,23 @@ Integrasi DFLASH 2 ke CooperxCompute, mencakup akuisisi drafter, build engine, p
 - [ ] Phase 5.3 — push ke `origin/main`
 
 ## Active Task
-Menunggu tim melanjutkan pekerjaan pada `n-max 6` untuk mengumpulkan sampel, lalu bandingkan dengan baseline `n-max 4` memakai `bash scripts/nmax_stats.sh "16:45"`.
+Mengumpulkan sampel n-max 6 dari beban nyata. Pengukuran pertama (18 request, tim baru restart sesi):
+
+| | n-max 4 | n-max 6 |
+| :--- | ---: | ---: |
+| mean_len | 3,21 | **3,91** (+22%) |
+| acceptance | 0,553 | 0,485 |
+| TPS median | 13,7 | **25,6** (+87%) |
+| TPS p90 | 22,1 | 30,3 |
+
+⚠️ Perancu: tim me-restart sesi sehingga context jauh lebih kecil (26K, 67K) dibanding baseline (~113K); context kecil lebih cepat. `mean_len` adalah sinyal lebih bersih karena minim dipengaruhi ukuran context. Butuh lebih banyak sampel sebelum menyimpulkan.
 
 ## Next Steps
-1. Minta ketiga developer (`dev-tuf`, `vincent`, `budi`) me-restart sesi Grok — tanpa ini compaction tidak pernah terpicu dan context tumbuh sampai plafon.
-2. Setelah ada ≥30 request pada n-max 6, jalankan `bash scripts/nmax_stats.sh "16:45"` dan bandingkan `mean_len` serta TPS median dengan n-max 4 (30 req, mean_len 3,21, TPS med 13,7).
-3. Phase 5.1 lalu push 12 commit dari `feat/dflash2-speculative-acceleration`.
+1. Kumpulkan ≥30 request pada n-max 6, lalu `bash scripts/nmax_stats.sh "16:45"` untuk memutuskan 4 vs 6.
+2. Phase 5.1 — dokumentasi modul DFLASH 2 di ARCHITECTURE.md dan AGENTS.md.
+3. Push 13 commit dari `feat/dflash2-speculative-acceleration`.
 
 ## Blockers
-Sesi Grok yang berjalan masih memegang `context_window = 262144` dari sebelum config diperbarui, sehingga ambang compaction (235K) tidak akan pernah tercapai dan sesi tumbuh sampai plafon slot 172.032. Pada context >60K, TPS rata-rata jatuh ke 9,5 versus 23,5 di bawah 5K. **Selama ini belum diperbaiki, perbandingan n-max akan tenggelam dalam noise.** Perbaikannya di luar kendali server — setiap developer harus restart sesinya sendiri.
+(teratasi 2026-08-20 ~16:45 — tim sudah restart sesi Grok; dev 1 mulai baru, dev 2 resume. Sesi yang di-resume membawa riwayat ~108K sehingga mulai dekat plafon, tetapi config barunya termuat sehingga compaction kini berfungsi.)
+
+*Riwayat:* Sesi Grok yang berjalan masih memegang `context_window = 262144` dari sebelum config diperbarui, sehingga ambang compaction (235K) tidak akan pernah tercapai dan sesi tumbuh sampai plafon slot 172.032. Pada context >60K, TPS rata-rata jatuh ke 9,5 versus 23,5 di bawah 5K. **Selama ini belum diperbaiki, perbandingan n-max akan tenggelam dalam noise.** Perbaikannya di luar kendali server — setiap developer harus restart sesinya sendiri.

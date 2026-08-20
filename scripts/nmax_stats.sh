@@ -13,7 +13,7 @@
 SINCE="${1:-today}"
 # n-max aktif saat ini, dipakai sebagai fallback bila jendela waktu tidak memuat
 # penanda "n_max=" (penanda itu hanya dicetak sekali saat server start).
-CURRENT_NMAX=$(grep -oE '"'"'--spec-draft-n-max [0-9]+'"'"' /home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh 2>/dev/null | grep -oE '"'"'[0-9]+'"'"')
+CURRENT_NMAX=$(grep -oE -- "--spec-draft-n-max [0-9]+" /home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh 2>/dev/null | grep -oE "[0-9]+")
 CURRENT_NMAX="${CURRENT_NMAX:-0}"
 journalctl -u llamacpp.service --no-pager --since "$SINCE" 2>/dev/null \
   | sed 's/^.*run-qwen.sh\[[0-9]*\]: //' \
