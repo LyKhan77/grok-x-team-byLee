@@ -12,9 +12,11 @@ $DEFAULT_LOCAL_ENDPOINT = "http://127.0.0.1:8987/api/v1"
 $DEFAULT_MODEL_NAME = "qwen35"
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+Write-Host ""
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "   🚀 CooperAgent Multi-Harness Setup (Windows PowerShell)       " -ForegroundColor Cyan
-Write-Host "=================================================================`n" -ForegroundColor Cyan
+Write-Host "=================================================================" -ForegroundColor Cyan
+Write-Host ""
 
 # 1. Pilihan Coding Agent Harness
 Write-Host "Pilih Coding Agent yang ingin dipasang/dikonfigurasi:" -ForegroundColor Yellow
@@ -25,7 +27,8 @@ $AGENT_CHOICE = Read-Host "Pilihan [1/2/3, default: 1]"
 if ([string]::IsNullOrWhiteSpace($AGENT_CHOICE)) { $AGENT_CHOICE = "1" }
 
 # 2. Input Identitas Developer
-Write-Host "`n--- Identitas Developer (CooperxTelemetry) ---" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "--- Identitas Developer (CooperxTelemetry) ---" -ForegroundColor Cyan
 $DEV_NAME = Read-Host "Masukkan nama/nickname Anda (contoh: lee, alex, budi, vincent) [default: dev-user]"
 if ([string]::IsNullOrWhiteSpace($DEV_NAME)) {
     $DEV_NAME = "dev-user"
@@ -35,7 +38,8 @@ if ([string]::IsNullOrWhiteSpace($DEV_NAME)) { $DEV_NAME = "dev-user" }
 Write-Host "✔ Identitas tersimpan: $DEV_NAME" -ForegroundColor Green
 
 # 3. Pilihan Endpoint Server
-Write-Host "`n--- Endpoint CooperAgent AI Server ---" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "--- Endpoint CooperAgent AI Server ---" -ForegroundColor Cyan
 Write-Host "  1) Jaringan LAN Kantor ($DEFAULT_LAN_ENDPOINT) [Rekomendasi Laptop/PC Tim]"
 Write-Host "  2) Localhost Server ($DEFAULT_LOCAL_ENDPOINT) [Jika jalan langsung di server AI]"
 Write-Host "  3) Custom Endpoint (IP / Domain / VPN Tunnel)"
@@ -55,8 +59,10 @@ if ([string]::IsNullOrWhiteSpace($choice) -or $choice -eq "1") {
 }
 
 # 4. Test Koneksi ke Server (Health Check)
-$HEALTH_URL = $SERVER_URL.TrimEnd('/api/v1').TrimEnd('/v1') + "/api/health"
-Write-Host "`nMenguji koneksi ke CooperAgent Gateway: $HEALTH_URL..." -ForegroundColor Yellow
+$BASE_HOST = $SERVER_URL -replace "/api/v1.*$", "" -replace "/v1.*$", ""
+$HEALTH_URL = "$BASE_HOST/api/health"
+Write-Host ""
+Write-Host "Menguji koneksi ke CooperAgent Gateway: $HEALTH_URL..." -ForegroundColor Yellow
 
 try {
     $response = Invoke-RestMethod -Uri $HEALTH_URL -TimeoutSec 5 -ErrorAction Stop
@@ -72,7 +78,8 @@ try {
 
 # 5. Instalasi & Konfigurasi Grok Build (jika opsi 1 atau 3)
 if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
-    Write-Host "`n--- Mengonfigurasi Grok Build (Rust TUI) ---" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "--- Mengonfigurasi Grok Build (Rust TUI) ---" -ForegroundColor Cyan
     if (Get-Command "grok" -ErrorAction SilentlyContinue) {
         Write-Host "✔ Grok CLI terdeteksi di sistem." -ForegroundColor Green
     } else {
@@ -103,7 +110,7 @@ if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
         "load_envrc = true",
         "",
         "[models]",
-        "default = ""internal-qwen""",
+        "default = 'internal-qwen'",
         "stream_tool_calls = true",
         "temperature = 0.7",
         "top_p = 0.85",
@@ -114,11 +121,11 @@ if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
         "max_output_tokens = 65536",
         "",
         "[model.internal-qwen]",
-        "model = ""$DEFAULT_MODEL_NAME""",
-        "base_url = ""$SERVER_URL""",
-        "name = ""CooperAgent Qwen 3.8 (27B Q8 - 256K Dedicated)""",
-        "description = ""Dedicated 256K Monster Context Window via Port 8987 Gateway""",
-        "api_backend = ""chat_completions""",
+        "model = '$DEFAULT_MODEL_NAME'",
+        "base_url = '$SERVER_URL'",
+        "name = 'CooperAgent Qwen 3.8 (27B Q8 - 256K Dedicated)'",
+        "description = 'Dedicated 256K Monster Context Window via Port 8987 Gateway'",
+        "api_backend = 'chat_completions'",
         "context_window = 262144",
         "max_completion_tokens = 65536",
         "max_tokens = 65536",
@@ -128,7 +135,7 @@ if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
         "min_p = 0.05",
         "repeat_penalty = 1.1",
         "presence_penalty = 0.1",
-        "api_key = ""dev-$DEV_NAME"""
+        "api_key = 'dev-$DEV_NAME'"
     )
     $configContent = $configLines -join "`r`n"
     [System.IO.File]::WriteAllText($CONFIG_FILE, $configContent, [System.Text.Encoding]::UTF8)
@@ -137,22 +144,25 @@ if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
 
 # 6. Konfigurasi Pi Agent (jika opsi 2 atau 3)
 if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
-    Write-Host "`n--- Mengonfigurasi Pi Agent (Lightweight CLI) ---" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "--- Mengonfigurasi Pi Agent (Lightweight CLI) ---" -ForegroundColor Cyan
     $PI_DIR = Join-Path $env:USERPROFILE ".pi"
     if (-not (Test-Path $PI_DIR)) {
         New-Item -ItemType Directory -Path $PI_DIR -Force | Out-Null
     }
     $PI_CONFIG = Join-Path $PI_DIR "config.json"
-    $baseV1 = $SERVER_URL.TrimEnd('/api/v1').TrimEnd('/v1') + "/v1"
-    $piJson = @{
+    $baseV1 = "$BASE_HOST/v1"
+    
+    $piObj = [ordered]@{
         provider = "openai"
         base_url = $baseV1
         api_key = "dev-$DEV_NAME"
         model = $DEFAULT_MODEL_NAME
         context_window = 262144
         temperature = 0.7
-    } | ConvertTo-Json -Depth 4
-    [System.IO.File]::WriteAllText($PI_CONFIG, $piJson, [System.Text.Encoding]::UTF8)
+    }
+    $piContent = $piObj | ConvertTo-Json -Depth 4
+    [System.IO.File]::WriteAllText($PI_CONFIG, $piContent, [System.Text.Encoding]::UTF8)
     Write-Host "✔ Konfigurasi Pi Agent tersimpan di: $PI_CONFIG" -ForegroundColor Green
 }
 
@@ -171,15 +181,18 @@ if (-not (Test-Path $LOCAL_BIN)) {
 
 $standardizePy = Join-Path $SCRIPT_DIR "scripts\standardize.py"
 if (Test-Path $standardizePy) {
-    "@echo off`r`npython `"$standardizePy`" %*" | Out-File -FilePath (Join-Path $LOCAL_BIN "cooper-standardize.cmd") -Encoding ascii
-    "@echo off`r`npython `"$standardizePy`" %*" | Out-File -FilePath (Join-Path $LOCAL_BIN "grok-standardize.cmd") -Encoding ascii
+    $cmdText = "@echo off" + "`r`n" + "python `"$standardizePy`" %*"
+    [System.IO.File]::WriteAllText((Join-Path $LOCAL_BIN "cooper-standardize.cmd"), $cmdText, [System.Text.Encoding]::ASCII)
+    [System.IO.File]::WriteAllText((Join-Path $LOCAL_BIN "grok-standardize.cmd"), $cmdText, [System.Text.Encoding]::ASCII)
     Write-Host "✔ Shortcut cooper-standardize berhasil dipasang." -ForegroundColor Green
 }
 
-Write-Host "`n=================================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "🎉 Setup Selesai! Selamat datang di CooperAgent (Windows)!" -ForegroundColor Green
 Write-Host "  - Menjalankan Grok:      Ketik 'grok' di PowerShell folder project Anda."
 Write-Host "  - Menjalankan Pi Agent:  Ketik 'pi' di PowerShell folder project Anda."
 Write-Host "  - Persistensi Memori:    Gunakan CooperxMemory (.agents/memory/session_state.md)."
 Write-Host "  - Pantau Dashboard:      Buka http://192.168.2.143:8987/"
 Write-Host "=================================================================" -ForegroundColor Cyan
+Write-Host ""
