@@ -154,12 +154,16 @@ if [ -d "${SCRIPT_DIR}/.git" ]; then
     echo -e "${GREEN}✔ Git pre-commit secret protection hooks diaktifkan.${NC}"
 fi
 
-# 8. Pasang command standardize ke ~/.local/bin
+# 8. Pasang command standardize & pi ke ~/.local/bin
 mkdir -p "$HOME/.local/bin"
 if [ -f "${SCRIPT_DIR}/scripts/standardize.py" ]; then
     ln -sf "${SCRIPT_DIR}/scripts/standardize.py" "$HOME/.local/bin/cooper-standardize" 2>/dev/null || true
     ln -sf "${SCRIPT_DIR}/scripts/standardize.py" "$HOME/.local/bin/grok-standardize" 2>/dev/null || true
     chmod +x "${SCRIPT_DIR}/scripts/standardize.py"
+fi
+if [ -f "${SCRIPT_DIR}/scripts/pi_agent.py" ]; then
+    ln -sf "${SCRIPT_DIR}/scripts/pi_agent.py" "$HOME/.local/bin/pi" 2>/dev/null || true
+    chmod +x "${SCRIPT_DIR}/scripts/pi_agent.py"
 fi
 
 echo -e "\n${CYAN}================================================================${NC}"

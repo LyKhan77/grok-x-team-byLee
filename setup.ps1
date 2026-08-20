@@ -12,6 +12,25 @@ $DEFAULT_LOCAL_ENDPOINT = "http://127.0.0.1:8987/api/v1"
 $DEFAULT_MODEL_NAME = "qwen35"
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# Prepare ~/.local/bin
+$LOCAL_BIN = Join-Path $env:USERPROFILE ".local\bin"
+if (-not (Test-Path $LOCAL_BIN)) {
+    New-Item -ItemType Directory -Path $LOCAL_BIN -Force | Out-Null
+}
+
+# Ensure LOCAL_BIN is in PATH for current session
+if ($env:PATH -notmatch [regex]::Escape($LOCAL_BIN)) {
+    $env:PATH = "$LOCAL_BIN;$env:PATH"
+}
+
+# Ensure LOCAL_BIN is in User Environment PATH permanently
+try {
+    $userPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
+    if ($userPath -notmatch [regex]::Escape($LOCAL_BIN)) {
+        [Environment]::SetEnvironmentVariable("Path", "$LOCAL_BIN;$userPath", [EnvironmentVariableTarget]::User)
+    }
+} catch {}
+
 Write-Host ""
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "   [+] CooperAgent Multi-Harness Setup (Windows PowerShell)      " -ForegroundColor Cyan
@@ -164,6 +183,14 @@ if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
     $piContent = $piObj | ConvertTo-Json -Depth 4
     [System.IO.File]::WriteAllText($PI_CONFIG, $piContent, [System.Text.Encoding]::UTF8)
     Write-Host "[v] Konfigurasi Pi Agent tersimpan di: $PI_CONFIG" -ForegroundColor Green
+
+    # Pasang wrapper executable pi.cmd & pi.ps1
+    $piScript = Join-Path $SCRIPT_DIR "scripts\pi_agent.py"
+    if (Test-Path $piScript) {
+        $piCmd = "@echo off" + "`r`n" + "python `"$piScript`" %*"
+        [System.IO.File]::WriteAllText((Join-Path $LOCAL_BIN "pi.cmd"), $piCmd, [System.Text.Encoding]::ASCII)
+        Write-Host "[v] Executable CLI 'pi' berhasil dipasang ke PATH." -ForegroundColor Green
+    }
 }
 
 # 7. Pasang Git Hooks Otomatis (jika git diinisialisasi)
@@ -174,14 +201,9 @@ if (Test-Path (Join-Path $SCRIPT_DIR ".git")) {
 }
 
 # 8. Pasang shortcut standardize untuk Windows
-$LOCAL_BIN = Join-Path $env:USERPROFILE ".local\bin"
-if (-not (Test-Path $LOCAL_BIN)) {
-    New-Item -ItemType Directory -Path $LOCAL_BIN -Force | Out-Null
-}
-
 $standardizePy = Join-Path $SCRIPT_DIR "scripts\standardize.py"
 if (Test-Path $standardizePy) {
-    $cmdText = "@echo off`r`npython `"$standardizePy`" %*"
+    $cmdText = "@echo off" + "`r`n" + "python `"$standardizePy`" %*"
     [System.IO.File]::WriteAllText((Join-Path $LOCAL_BIN "cooper-standardize.cmd"), $cmdText, [System.Text.Encoding]::ASCII)
     [System.IO.File]::WriteAllText((Join-Path $LOCAL_BIN "grok-standardize.cmd"), $cmdText, [System.Text.Encoding]::ASCII)
     Write-Host "[v] Shortcut cooper-standardize berhasil dipasang." -ForegroundColor Green
