@@ -175,32 +175,43 @@ if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
         } catch {}
     }
 
-    $PI_DIR = Join-Path $env:USERPROFILE ".pi"
-    if (-not (Test-Path $PI_DIR)) {
-        New-Item -ItemType Directory -Path $PI_DIR -Force | Out-Null
+    $PI_AGENT_DIR = Join-Path (Join-Path $env:USERPROFILE ".pi") "agent"
+    if (-not (Test-Path $PI_AGENT_DIR)) {
+        New-Item -ItemType Directory -Path $PI_AGENT_DIR -Force | Out-Null
     }
-    $PI_CONFIG = Join-Path $PI_DIR "config.json"
-    $baseV1 = "$BASE_HOST/v1"
     
-    $piObj = [ordered]@{
-        defaultProvider = "openai"
+    $baseV1 = "$BASE_HOST/v1"
+
+    # A. Write ~/.pi/agent/models.json (Official pi.dev model definition)
+    $MODELS_JSON = Join-Path $PI_AGENT_DIR "models.json"
+    $modelsObj = [ordered]@{
         providers = [ordered]@{
-            openai = [ordered]@{
+            cooperagent = [ordered]@{
+                name = "CooperAgent In-House"
                 baseUrl = $baseV1
+                api = "openai-completions"
                 apiKey = "dev-$DEV_NAME"
-                defaultModel = $DEFAULT_MODEL_NAME
+                models = @(
+                    [ordered]@{
+                        id = $DEFAULT_MODEL_NAME
+                        name = "CooperAgent Qwen 3.8 (27B Q8 - 256K)"
+                        contextWindow = 262144
+                        maxTokens = 65536
+                    }
+                )
             }
         }
-        provider = "openai"
-        base_url = $baseV1
-        api_key = "dev-$DEV_NAME"
-        model = $DEFAULT_MODEL_NAME
-        context_window = 262144
-        temperature = 0.7
     }
-    $piContent = $piObj | ConvertTo-Json -Depth 4
-    [System.IO.File]::WriteAllText($PI_CONFIG, $piContent, [System.Text.Encoding]::UTF8)
-    Write-Host "[v] Konfigurasi Pi Agent tersimpan di: $PI_CONFIG" -ForegroundColor Green
+    [System.IO.File]::WriteAllText($MODELS_JSON, ($modelsObj | ConvertTo-Json -Depth 5), [System.Text.Encoding]::UTF8)
+
+    # B. Write ~/.pi/agent/settings.json (Default model selection for pi.dev)
+    $SETTINGS_JSON = Join-Path $PI_AGENT_DIR "settings.json"
+    $settingsObj = [ordered]@{
+        defaultModel = "cooperagent/$DEFAULT_MODEL_NAME"
+    }
+    [System.IO.File]::WriteAllText($SETTINGS_JSON, ($settingsObj | ConvertTo-Json -Depth 3), [System.Text.Encoding]::UTF8)
+
+    Write-Host "[v] Konfigurasi resmi pi.dev tersimpan di: $MODELS_JSON" -ForegroundColor Green
 
     # Pasang fallback launcher jika binary pi belum terdeteksi
     if (-not (Get-Command "pi" -ErrorAction SilentlyContinue)) {

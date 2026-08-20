@@ -140,27 +140,36 @@ if [ "$AGENT_CHOICE" == "2" ] || [ "$AGENT_CHOICE" == "3" ]; then
         npm install -g --ignore-scripts @earendil-works/pi-coding-agent 2>/dev/null || true
     fi
 
-    mkdir -p "$HOME/.pi"
-    PI_CONFIG="$HOME/.pi/config.json"
-    cat <<EOF > "$PI_CONFIG"
+    mkdir -p "$HOME/.pi/agent"
+    
+    cat <<EOF > "$HOME/.pi/agent/models.json"
 {
-  "defaultProvider": "openai",
   "providers": {
-    "openai": {
+    "cooperagent": {
+      "name": "CooperAgent In-House",
       "baseUrl": "${SERVER_URL%/api/v1}/v1",
+      "api": "openai-completions",
       "apiKey": "dev-${DEV_NAME}",
-      "defaultModel": "${DEFAULT_MODEL_NAME}"
+      "models": [
+        {
+          "id": "${DEFAULT_MODEL_NAME}",
+          "name": "CooperAgent Qwen 3.8 (27B Q8 - 256K)",
+          "contextWindow": 262144,
+          "maxTokens": 65536
+        }
+      ]
     }
-  },
-  "provider": "openai",
-  "base_url": "${SERVER_URL%/api/v1}/v1",
-  "api_key": "dev-${DEV_NAME}",
-  "model": "${DEFAULT_MODEL_NAME}",
-  "context_window": 262144,
-  "temperature": 0.7
+  }
 }
 EOF
-    echo -e "${GREEN}✔ Konfigurasi Pi Agent tersimpan di: ${PI_CONFIG}${NC}"
+
+    cat <<EOF > "$HOME/.pi/agent/settings.json"
+{
+  "defaultModel": "cooperagent/${DEFAULT_MODEL_NAME}"
+}
+EOF
+
+    echo -e "${GREEN}✔ Konfigurasi resmi pi.dev tersimpan di: $HOME/.pi/agent/models.json${NC}"
 fi
 
 # 7. Pasang Git Hooks Otomatis (jika git diinisialisasi)
