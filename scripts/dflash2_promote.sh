@@ -5,6 +5,14 @@
 # Mengubah /home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh agar:
 #   - memakai binary hasil build PR #27342 (/home/gspe-ai1/llama.cpp-dflash2)
 #   - memakai drafter DFlash2 (--spec-type draft-dflash, --spec-draft-n-max 7)
+#   - memberi konteks drafter akses ke SEMUA GPU (--spec-draft-device CUDA0,CUDA1,CUDA2)
+#
+# KENAPA semua GPU: drafter DFlash2 tidak punya output.weight/tok_embd sendiri
+# (tensor non-blok-nya hanya enc.output_norm, fc, output_norm, selector_*), jadi ia
+# MEMINJAM milik target. Dengan --tensor-split 1,1,1 output.weight target mendarat di
+# CUDA2; kalau konteks drafter dipaku ke CUDA0 saja, ggml-backend.cpp:930 abort dengan
+#   "pre-allocated tensor (output.weight) in a buffer (CUDA2) that cannot run the operation"
+
 #   - opsional menaikkan --ctx-size (arg pertama, default tetap 524288)
 #
 # CATATAN: server dikelola systemd unit `llamacpp.service` (Restart=always).
@@ -26,6 +34,7 @@ CTX="${1:-524288}"
 sed -i \
   -e "s|^CUDA_VISIBLE_DEVICES=0,1,2 ./llama-server|CUDA_VISIBLE_DEVICES=0,1,2 $NEWBIN|" \
   -e 's|--spec-type draft-simple|--spec-type draft-dflash|' \
+  -e 's|--spec-draft-device CUDA0|--spec-draft-device CUDA0,CUDA1,CUDA2|' \
   -e "s|--model-draft .*|--model-draft $DRAFT \\\\|" \
   -e 's|--spec-draft-n-max 8|--spec-draft-n-max 7|' \
   -e "s|--ctx-size [0-9]*|--ctx-size $CTX|" \

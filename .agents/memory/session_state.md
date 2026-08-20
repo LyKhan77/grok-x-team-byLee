@@ -87,17 +87,56 @@ Konsekuensinya: KV model target **bukan** penghambat menuju 1M. Yang menghambat 
 - `dflash.block_size = 8` ⇒ **`--spec-draft-n-max 7`** adalah nilai yang benar (draft = block_size − 1).
 - `dflash.attention.sliding_window = 2048` pada kelima layer ⇒ KV drafter di-cap 2048 token/slot ≈ **0.17 GiB saja**. `--spec-draft-type-k/v q4_0` **tidak diperlukan**; biarkan F16 (lebih aman untuk KV-injection DFlash).
 
-### 🔴 Phase 2 — TERBLOKIR: build llama.cpp belum mendukung DFlash **2**
+### ✅ Phase 2a — Build llama.cpp dengan dukungan DFlash 2 — SELESAI
 
+Build produksi (`master @ 25ae3a9b3`) hanya mendukung DFlash **1**:
 ```
 E llama_model_load: error loading model: done_getting_tensors: wrong number of tensors; expected 81, got 58
 ```
+Tidak satu pun metadata key DFlash 2 dikenali `src/llama-arch.cpp` (`conv_kernel_size`, `conv_group_size`, `selector_rank`, `selector_top_k`, `block_size`, `target_layers`). GGUF-nya tidak rusak — loader-nya yang ketinggalan.
 
-Build produksi (`master @ 25ae3a9b3`, 18 Agu 2026 04:15 UTC) punya arch `dflash` — tetapi itu **DFlash 1**. Tidak satu pun metadata key DFlash 2 dikenali `src/llama-arch.cpp`: `conv_kernel_size`, `conv_group_size`, `selector_rank`, `selector_top_k`, `block_size`, `target_layers`. 23 tensor *local convolution + candidate selector* tidak punya slot di loader. **GGUF-nya sendiri tidak rusak** (SHA256 cocok) — loader-nya yang ketinggalan.
+Dukungan ada di **[PR #27342](https://github.com/ggml-org/llama.cpp/pull/27342)** (`spec : add DFlash2 support`), **masih `open`** per 2026-08-20. Build dibuat di worktree terpisah:
 
-- Dukungan ada di **[PR #27342](https://github.com/ggml-org/llama.cpp/pull/27342)** — *"spec : add DFlash2 support (local convolution + candidate selector)"*, 20 file, +676/−83. Status **masih `open`, belum merged** per 2026-08-20.
-- GGUF DFlash 2 dirilis 18 Agu 21:25 UTC, yaitu **17 jam setelah** commit build produksi — jarak ini tak terhindarkan.
-- **Aksi berjalan:** build dari PR di worktree terpisah `/home/gspe-ai1/llama.cpp-dflash2` (branch `pr-27342` @ `5ecbe1ac1`), agar binary produksi tidak tersentuh. Toolchain: CUDA 13.0, `-DGGML_CUDA=ON -DGGML_CUDA_FA=ON -DGGML_NATIVE=ON`.
+- Lokasi: `/home/gspe-ai1/llama.cpp-dflash2` (branch `pr-27342` @ `5ecbe1ac1`), binary `build/bin/llama-server`, self-contained lewat RUNPATH ke dir-nya sendiri.
+- Toolchain: CUDA 13.0, `-DGGML_CUDA=ON -DGGML_CUDA_FA=ON -DGGML_NATIVE=ON`.
+- ⚠️ Branch PR membawa **17 commit** yang belum ada di build produksi; hanya **1** di antaranya `support DFlash2`, 16 sisanya commit upstream lain. Promote = lompatan 17 commit, bukan sekadar menambah DFlash 2.
+
+### ✅ Phase 2b — Validasi terisolasi — LOLOS
+
+Uji CPU-only pada port 8002 (produksi GPU tak tersentuh):
+```
+common_speculative_impl_draft_dflash: adding speculative implementation 'draft-dflash'
+ - n_max=7, n_min=2, p_min=0.00
+ - block_size=8, mask_token_id=248070, n_extract=5, sample_from_anchor=true
+...
+draft acceptance = 0.64463 (156 accepted / 242 generated), mean len = 5.46
+```
+**Acceptance length 5.46** — sesuai target plan 4.5–6.5 dan eval resmi HF Q4_K_M (5.39).
+
+⚠️ Keterbatasan uji ini: `--device none` berarti graph DFlash 2 di jalur **CUDA** tidak tersentuh sama sekali. Itu sebabnya promote tetap gagal (lihat 2c).
+
+### 🔴 Phase 2c — Promote pertama GAGAL — root cause ditemukan
+
+Restart produksi pada 11:06 menghasilkan crashloop `SIGABRT` (exit 134):
+```
+ggml-backend.cpp:930: pre-allocated tensor (output.weight) in a buffer (CUDA2)
+                      that cannot run the operation (NONE)
+```
+Backtrace: `ggml_backend_sched_backend_id_from_cur` ← `split_graph` ← `graph_reserve` ← `resolve_fused_ops` ← `llama_context()` ← `common_speculative_init_result` — yaitu saat **konteks drafter** dibuat.
+
+**Root cause (terkonfirmasi):** drafter DFlash 2 **tidak punya `output.weight` maupun `tok_embd.weight` sendiri**. Tensor non-blok-nya hanya `enc.output_norm`, `fc`, `output_norm`, `selector_hidden`, `selector_predecessor`, `selector_successor` — ia **meminjam** lm_head dan embedding dari target. Dengan `--tensor-split 1,1,1`, `output.weight` target mendarat di **CUDA2**, sementara `--spec-draft-device CUDA0` membatasi scheduler konteks drafter hanya ke CUDA0 + CPU. Tensor yang sudah teralokasi di buffer CUDA2 tak bisa dijadwalkan → abort.
+
+Ini menjelaskan kenapa semua pelapor sukses di PR memakai **satu GPU**, dan kenapa seluruh uji CPU lolos (di sana `output.weight` ada di buffer CPU yang dikenal scheduler drafter).
+
+**Perbaikan:** `--spec-draft-device CUDA0,CUDA1,CUDA2` — sudah dimasukkan ke [`scripts/dflash2_promote.sh`](../../scripts/dflash2_promote.sh) dan terverifikasi lewat dry-run. **Belum diuji live** karena butuh target di GPU (~29 GB VRAM), yang tidak muat berdampingan dengan produksi — perlu jendela maintenance.
+
+Bisect yang sudah dijalankan (semua dengan target di CPU, drafter di CUDA0):
+
+| Uji | Flag tambahan | Hasil |
+| :--- | :--- | :--- |
+| repro dasar | — | ✅ load & listening |
+| bisect-FULL | ctx 524288, parallel 4, batch 4096/ubatch 1024, flash-attn on, cache q4_0 | ✅ load & listening |
+| bisect-MMPROJ | + `--mmproj` | ❌ crash — tapi **backtrace berbeda** (`clip_model_loader::load_tensors` ← `mtmd_get_memory_usage`), artefak `--gpu-layers 0`, bukan penyebab produksi |
 
 ### 🔬 Temuan VRAM: 1M context dan DFLASH 2 adalah satu paket
 
@@ -126,9 +165,9 @@ Proyeksi dengan DFLASH 2 pada 1.048.576 ctx:
 
 ## 5. Remaining Checklist
 - [x] **Phase 1:** Unduh + verifikasi SHA-256 & kompatibilitas tokenizer drafter DFlash2.
-- [ ] **Phase 2a:** Selesaikan build llama.cpp PR #27342 di `/home/gspe-ai1/llama.cpp-dflash2`.
-- [ ] **Phase 2b:** Uji binary hasil build di **port 8002** (ctx kecil) untuk validasi `draft-dflash` load + acceptance rate, tanpa mengganggu produksi 8001.
-- [ ] **Phase 2c:** Promote ke produksi: update `run-qwen.sh` (`--spec-type draft-dflash`, `--model-draft ...DFlash2-Q4_K_M.gguf`, `--spec-draft-n-max 7`), lalu naikkan `--ctx-size` ke 1048576 dan ukur VRAM nyata.
+- [x] **Phase 2a:** Build llama.cpp PR #27342 di `/home/gspe-ai1/llama.cpp-dflash2` — selesai.
+- [x] **Phase 2b:** Validasi terisolasi — acceptance length 5.46, lolos.
+- [ ] **Phase 2c:** Promote ke produksi — **percobaan pertama gagal**, root cause ditemukan dan perbaikan (`--spec-draft-device CUDA0,CUDA1,CUDA2`) sudah masuk skrip. Butuh jendela maintenance untuk uji live.
 - [ ] **Phase 2d:** Sinkronkan `server-optimize.sh` dengan `run-qwen.sh`, atau turunkan statusnya menjadi referensi eksplisit di dokumen.
 - [ ] **Phase 3:** Stress test multi-stream (`test/run_stress_test.sh`, `test/benchmark_concurrency.py`) → `test/results/benchmark_dflash2_results.json`.
 - [ ] **Phase 4:** Verifikasi live throughput di dashboard Port 8987.
@@ -141,6 +180,7 @@ Proyeksi dengan DFLASH 2 pada 1.048.576 ctx:
 - Backup script repo: [`scripts/server-optimize.pre-dflash2.bak.sh`](../../scripts/server-optimize.pre-dflash2.bak.sh)
 - **Config known-good:** `--spec-type draft-simple` + `Qwen2.5-Coder-0.5B-Q8_0.gguf` + `--ctx-size 524288` → VRAM 47.8 GB, stabil.
 - Binary produksi tetap di `/home/gspe-ai1/llama.cpp/build/bin/`; build eksperimental terisolasi di `/home/gspe-ai1/llama.cpp-dflash2/build/`.
+- **Insiden 2026-08-20 11:05–11:07:** Promote pertama gagal `SIGABRT` di konteks drafter (`output.weight` di CUDA2 vs `--spec-draft-device CUDA0`); crashloop, port 8001 down ±1 menit sampai rollback. *Pelajaran: uji terisolasi yang seluruhnya di CPU tidak membuktikan apa pun tentang penempatan multi-GPU — permukaan uji harus mencerminkan topologi produksi.*
 - **Insiden 2026-08-20 10:47–10:51:** `kill` manual memicu systemd merestart service dengan `run-qwen.sh` yang sudah diedit ke 1M + drafter lama → OOM crashloop, port 8001 down ±5 menit. Sudah dipulihkan ke config known-good. *Pelajaran: selalu `systemctl stop llamacpp.service` dulu, dan pastikan isi `run-qwen.sh` sudah diverifikasi sebelum service di-restart.*
 
 ---

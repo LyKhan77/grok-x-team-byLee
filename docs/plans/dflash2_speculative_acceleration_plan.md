@@ -4,7 +4,7 @@
 > **Target Hardware:** 3x NVIDIA GeForce RTX 3090 (72 GB VRAM) + Intel Core Ultra 7 265  
 > **Ecosystem:** CooperAgent  
 > **Source Reference:** [Inco AI DFLASH 2 Research (August 2026)](https://inco.ai/blog/dflash2/)  
-> **Status:** Phase 1 ✅ selesai · Phase 2 🔴 terblokir pada build llama.cpp · Revisi 2026-08-20
+> **Status:** Phase 1 ✅ · Phase 2a build ✅ · Phase 2b validasi ✅ (acceptance 5.46) · Phase 2c promote 🔴 gagal sekali, root cause ditemukan · Revisi 2026-08-20
 
 ---
 
@@ -117,8 +117,16 @@ Build produksi `master @ 25ae3a9b3` mendukung DFlash **1**, bukan DFlash **2**. 
   cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_CUDA_FA=ON -DGGML_NATIVE=ON
   cmake --build build -j 12 --target llama-server
   ```
-- [ ] **Task 2b:** Uji binary hasil build di **port 8002** dengan ctx kecil — validasi drafter ter-load (`auto-detected speculative type 'draft-dflash'`) dan acceptance rate wajar, tanpa mengganggu produksi 8001.
-- [ ] **Task 2c:** Promote ke produksi via `run-qwen.sh`. **Pertahankan seluruh flag yang sudah live** — `--mmproj`, `--alias qwen35`, `--jinja`, `--tensor-split 1,1,1`, `--gpu-layers 999`, `--host 0.0.0.0`, dan sampling params. Yang berubah hanya:
+- [x] **Task 2a:** SELESAI — build di `/home/gspe-ai1/llama.cpp-dflash2` (`pr-27342` @ `5ecbe1ac1`). ⚠️ Branch PR membawa **17 commit** yang belum ada di build produksi; hanya 1 di antaranya `support DFlash2`.
+- [x] **Task 2b:** SELESAI — uji CPU-only di port 8002: `draft acceptance = 0.64463 (156/242), mean len = 5.46`. ⚠️ Uji ini memakai `--device none` sehingga jalur CUDA tidak tersentuh — itu celah yang meloloskan bug 2c.
+- [ ] **Task 2b-bis:** Uji ulang dengan target di GPU multi-device (butuh jendela maintenance ~29 GB VRAM).
+- [ ] **Task 2c:** Promote ke produksi via `run-qwen.sh`. **Percobaan pertama (11:06) GAGAL** dengan
+  ```
+  ggml-backend.cpp:930: pre-allocated tensor (output.weight) in a buffer (CUDA2) that cannot run the operation (NONE)
+  ```
+  **Root cause:** drafter DFlash 2 tidak punya `output.weight`/`tok_embd.weight` sendiri (tensor non-blok-nya hanya `enc.output_norm`, `fc`, `output_norm`, `selector_*`) — ia meminjam dari target. Dengan `--tensor-split 1,1,1`, `output.weight` target ada di CUDA2, sementara `--spec-draft-device CUDA0` membatasi scheduler drafter ke CUDA0 saja.
+  **Perbaikan:** `--spec-draft-device CUDA0,CUDA1,CUDA2` (sudah masuk `scripts/dflash2_promote.sh`).
+  **Pertahankan seluruh flag yang sudah live** — `--mmproj`, `--alias qwen35`, `--jinja`, `--tensor-split 1,1,1`, `--gpu-layers 999`, `--host 0.0.0.0`, dan sampling params. Yang berubah hanya:
   ```diff
   - --spec-type draft-simple
   - --model-draft /home/gspe-ai1/models/qwen38-27b/Qwen2.5-Coder-0.5B-Q8_0.gguf
@@ -126,6 +134,8 @@ Build produksi `master @ 25ae3a9b3` mendukung DFlash **1**, bukan DFlash **2**. 
   + --spec-type draft-dflash
   + --model-draft /home/gspe-ai1/models/qwen38-27b/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
   + --spec-draft-n-max 7
+  - --spec-draft-device CUDA0
+  + --spec-draft-device CUDA0,CUDA1,CUDA2   # WAJIB: drafter meminjam output.weight target
   ```
   Catatan: **jangan** set `--spec-draft-type-k/v q4_0` — KV drafter sudah di-cap SWA 2048 (~0.17 GiB), dan F16 lebih aman untuk KV-injection DFlash.
 - [ ] **Task 2d:** Setelah DFLASH 2 stabil di 524288, naikkan `--ctx-size` ke `1048576` dan **ukur VRAM nyata** (bukan proyeksi).
