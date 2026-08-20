@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **DFLASH 2 Speculative Acceleration Plan:** Penyusunan master plan integrasi teknologi *Parallel Speculative Drafter* Inco AI DFLASH 2 (`incoai/Qwen3.8-27B-DFlash2-GGUF`) untuk melipatgandakan kecepatan decoding dari ~27 TPS ke **~70–90+ TPS per user** (2.7x–3.4x speedup) dengan preservasi 100% lossless output pada 4 Slots x 256K Context.
+- **Official Pi Agent (`pi.dev`) Integration & UTF-8 Encoding Fix:** Integrasi resmi package `@earendil-works/pi-coding-agent` (pi v0.84.2) pada `setup.ps1` dan `setup.sh` dengan generator konfigurasi resmi `~/.pi/agent/models.json` dan `settings.json` berformat UTF-8 murni tanpa BOM untuk mencegah parser error Node.js di Windows.
+- **Windows PowerShell 5.1 ASCII Hardening:** Menghilangkan seluruh karakter multibyte Unicode emoji dari `setup.ps1` untuk menjamin kompatibilitas 100% pada sistem operasi Windows 10/11 default.
 - **CooperAgent Ecosystem & Cooperx Module Branding:** Re-branding platform menjadi **`CooperAgent`** dengan standarisasi modul kode seri **`Cooperx{Feature}`** (`CooperxCompute`, `CooperxMemory`, `CooperxHarness`, `CooperxTelemetry`, dan `CooperxStandard`).
 - **CooperxCompute (4 Slots x 256K Context = 1,048,576 Total Tokens):** Peningkatan kapasitas inferensi server menjadi 4 developer slots independen dengan dedicated 262.144 tokens per slot di 3x RTX 3090 menggunakan kuantisasi KV-cache `q4_0` dan Speculative Acceleration (`--spec-draft-n-max 8`).
 - **CooperxMemory Autonomous Persistence Harness:** Implementasi standar persistensi memori mandiri terinspirasi dari Claude Code & Hermes Agent: *Continuous State Checkpointing* (`.agents/memory/session_state.md`), *90% Context Limit Warning Handover Card*, dan *Instant 0-Token Rehydration* tanpa jeda *compaction freeze*.
