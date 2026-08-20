@@ -14,13 +14,13 @@ $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host ""
 Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host "   🚀 CooperAgent Multi-Harness Setup (Windows PowerShell)       " -ForegroundColor Cyan
+Write-Host "   [+] CooperAgent Multi-Harness Setup (Windows PowerShell)      " -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # 1. Pilihan Coding Agent Harness
 Write-Host "Pilih Coding Agent yang ingin dipasang/dikonfigurasi:" -ForegroundColor Yellow
-Write-Host "  1) Grok Build (Fullscreen Rust TUI, Visual Diff Viewer) [Rekomendasi Utama]"
+Write-Host "  1) Grok Build (Fullscreen Rust TUI, Visual Diff Viewer) [Rekomendasi]"
 Write-Host "  2) Pi Agent (Lightweight Inline CLI Coding Agent) [Alternatif Ringan]"
 Write-Host "  3) Keduanya (Grok Build + Pi Agent)"
 $AGENT_CHOICE = Read-Host "Pilihan [1/2/3, default: 1]"
@@ -35,13 +35,13 @@ if ([string]::IsNullOrWhiteSpace($DEV_NAME)) {
 }
 $DEV_NAME = $DEV_NAME.Trim().ToLower() -replace "[^a-zA-Z0-9_-]", ""
 if ([string]::IsNullOrWhiteSpace($DEV_NAME)) { $DEV_NAME = "dev-user" }
-Write-Host "✔ Identitas tersimpan: $DEV_NAME" -ForegroundColor Green
+Write-Host "[v] Identitas tersimpan: $DEV_NAME" -ForegroundColor Green
 
 # 3. Pilihan Endpoint Server
 Write-Host ""
 Write-Host "--- Endpoint CooperAgent AI Server ---" -ForegroundColor Cyan
-Write-Host "  1) Jaringan LAN Kantor ($DEFAULT_LAN_ENDPOINT) [Rekomendasi Laptop/PC Tim]"
-Write-Host "  2) Localhost Server ($DEFAULT_LOCAL_ENDPOINT) [Jika jalan langsung di server AI]"
+Write-Host "  1) Jaringan LAN Kantor ($DEFAULT_LAN_ENDPOINT) [Rekomendasi Laptop/PC]"
+Write-Host "  2) Localhost Server ($DEFAULT_LOCAL_ENDPOINT) [Jika di server AI]"
 Write-Host "  3) Custom Endpoint (IP / Domain / VPN Tunnel)"
 $choice = Read-Host "Pilihan [1/2/3, default: 1]"
 
@@ -67,12 +67,12 @@ Write-Host "Menguji koneksi ke CooperAgent Gateway: $HEALTH_URL..." -ForegroundC
 try {
     $response = Invoke-RestMethod -Uri $HEALTH_URL -TimeoutSec 5 -ErrorAction Stop
     if ($response.status -eq "ok" -or "$response" -match "ok") {
-        Write-Host "✔ Koneksi Berhasil! CooperAgent Gateway & GPU Backend aktif & sehat." -ForegroundColor Green
+        Write-Host "[v] Koneksi Berhasil! CooperAgent Gateway & GPU Backend aktif & sehat." -ForegroundColor Green
     } else {
-        Write-Host "✔ Terhubung ke Gateway." -ForegroundColor Green
+        Write-Host "[v] Terhubung ke Gateway." -ForegroundColor Green
     }
 } catch {
-    Write-Host "✖ Peringatan: Tidak dapat terhubung ke $HEALTH_URL." -ForegroundColor Red
+    Write-Host "[!] Peringatan: Tidak dapat terhubung ke $HEALTH_URL." -ForegroundColor Red
     Write-Host "Pastikan Anda terhubung ke Wi-Fi kantor / VPN dan server AI sedang aktif." -ForegroundColor Yellow
 }
 
@@ -81,14 +81,14 @@ if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
     Write-Host ""
     Write-Host "--- Mengonfigurasi Grok Build (Rust TUI) ---" -ForegroundColor Cyan
     if (Get-Command "grok" -ErrorAction SilentlyContinue) {
-        Write-Host "✔ Grok CLI terdeteksi di sistem." -ForegroundColor Green
+        Write-Host "[v] Grok CLI terdeteksi di sistem." -ForegroundColor Green
     } else {
         Write-Host "Mengunduh installer resmi xAI Grok untuk Windows..." -ForegroundColor Yellow
         try {
             Invoke-Expression (Invoke-RestMethod "https://x.ai/cli/install.ps1")
             $env:PATH += ";$($env:USERPROFILE)\.grok\bin;$($env:LOCALAPPDATA)\Programs\grok\bin"
         } catch {
-            Write-Host "✖ Gagal mengunduh installer otomatis. Silakan pasang Grok CLI manual jika diperlukan." -ForegroundColor Red
+            Write-Host "[!] Gagal mengunduh installer otomatis. Silakan pasang Grok CLI manual jika diperlukan." -ForegroundColor Red
         }
     }
 
@@ -139,7 +139,7 @@ if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
     )
     $configContent = $configLines -join "`r`n"
     [System.IO.File]::WriteAllText($CONFIG_FILE, $configContent, [System.Text.Encoding]::UTF8)
-    Write-Host "✔ Konfigurasi Grok tersimpan di: $CONFIG_FILE" -ForegroundColor Green
+    Write-Host "[v] Konfigurasi Grok tersimpan di: $CONFIG_FILE" -ForegroundColor Green
 }
 
 # 6. Konfigurasi Pi Agent (jika opsi 2 atau 3)
@@ -163,14 +163,14 @@ if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
     }
     $piContent = $piObj | ConvertTo-Json -Depth 4
     [System.IO.File]::WriteAllText($PI_CONFIG, $piContent, [System.Text.Encoding]::UTF8)
-    Write-Host "✔ Konfigurasi Pi Agent tersimpan di: $PI_CONFIG" -ForegroundColor Green
+    Write-Host "[v] Konfigurasi Pi Agent tersimpan di: $PI_CONFIG" -ForegroundColor Green
 }
 
 # 7. Pasang Git Hooks Otomatis (jika git diinisialisasi)
 if (Test-Path (Join-Path $SCRIPT_DIR ".git")) {
     $hooksPath = (Join-Path $SCRIPT_DIR "scripts/hooks").Replace("\", "/")
     git config core.hooksPath "$hooksPath" 2>$null
-    Write-Host "✔ Git pre-commit secret protection hooks diaktifkan." -ForegroundColor Green
+    Write-Host "[v] Git pre-commit secret protection hooks diaktifkan." -ForegroundColor Green
 }
 
 # 8. Pasang shortcut standardize untuk Windows
@@ -181,15 +181,15 @@ if (-not (Test-Path $LOCAL_BIN)) {
 
 $standardizePy = Join-Path $SCRIPT_DIR "scripts\standardize.py"
 if (Test-Path $standardizePy) {
-    $cmdText = "@echo off" + "`r`n" + "python `"$standardizePy`" %*"
+    $cmdText = "@echo off`r`npython `"$standardizePy`" %*"
     [System.IO.File]::WriteAllText((Join-Path $LOCAL_BIN "cooper-standardize.cmd"), $cmdText, [System.Text.Encoding]::ASCII)
     [System.IO.File]::WriteAllText((Join-Path $LOCAL_BIN "grok-standardize.cmd"), $cmdText, [System.Text.Encoding]::ASCII)
-    Write-Host "✔ Shortcut cooper-standardize berhasil dipasang." -ForegroundColor Green
+    Write-Host "[v] Shortcut cooper-standardize berhasil dipasang." -ForegroundColor Green
 }
 
 Write-Host ""
 Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host "🎉 Setup Selesai! Selamat datang di CooperAgent (Windows)!" -ForegroundColor Green
+Write-Host "[+] Setup Selesai! Selamat datang di CooperAgent (Windows)!" -ForegroundColor Green
 Write-Host "  - Menjalankan Grok:      Ketik 'grok' di PowerShell folder project Anda."
 Write-Host "  - Menjalankan Pi Agent:  Ketik 'pi' di PowerShell folder project Anda."
 Write-Host "  - Persistensi Memori:    Gunakan CooperxMemory (.agents/memory/session_state.md)."
