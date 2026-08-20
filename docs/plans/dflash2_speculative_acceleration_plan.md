@@ -4,7 +4,7 @@
 > **Target Hardware:** 3x NVIDIA GeForce RTX 3090 (72 GB VRAM) + Intel Core Ultra 7 265  
 > **Ecosystem:** CooperAgent  
 > **Source Reference:** [Inco AI DFLASH 2 Research (August 2026)](https://inco.ai/blog/dflash2/)  
-> **Status:** Phase 1 ✅ · Phase 2a build ✅ · Phase 2b validasi ✅ (acceptance 5.46) · Phase 2c promote 🔴 gagal sekali, root cause ditemukan · Revisi 2026-08-20
+> **Status:** Phase 1–2c ✅ **DFLASH 2 LIVE di produksi** (55,21 TPS, ≈2.1x) · Phase 2d 🔄 kuantisasi KV drafter menuju 4x256K · Revisi 2026-08-20
 
 ---
 
@@ -137,8 +137,28 @@ Build produksi `master @ 25ae3a9b3` mendukung DFlash **1**, bukan DFlash **2**. 
   - --spec-draft-device CUDA0
   + --spec-draft-device CUDA0,CUDA1,CUDA2   # WAJIB: drafter meminjam output.weight target
   ```
-  Catatan: **jangan** set `--spec-draft-type-k/v q4_0` — KV drafter sudah di-cap SWA 2048 (~0.17 GiB), dan F16 lebih aman untuk KV-injection DFlash.
-- [ ] **Task 2d:** Setelah DFLASH 2 stabil di 524288, naikkan `--ctx-size` ke `1048576` dan **ukur VRAM nyata** (bukan proyeksi).
+  ⚠️ Catatan revisi: versi sebelumnya dokumen ini menyatakan `--spec-draft-type-k/v q4_0` tidak perlu karena KV drafter di-cap SWA 2048. **Itu keliru** — lihat Task 2d. Flag tersebut justru syarat untuk mencapai 4 x 256K.
+- [ ] **Task 2d:** Naikkan kapasitas context. ⚠️ **Mensyaratkan kuantisasi KV drafter.**
+
+  **Koreksi asumsi:** DFlash 2 biasa **tidak** memakai cache berjendela. `llama-model.cpp` memakai `llama_kv_cache_iswa` hanya bila `dsv4_hc_mult > 0` (varian DSpark); DFlash 2 fallthrough ke KV ukuran penuh `n_ctx_seq`, sehingga `dflash.attention.sliding_window = 2048` diabaikan. KV drafter = `5 x 2 x 8 x 128 x sizeof(type)` = **20 KiB/token @ F16**.
+
+  | tipe KV drafter | @ 524288 | @ 1048576 |
+  | :--- | ---: | ---: |
+  | F16 | 10,0 GiB | 20,0 GiB |
+  | q4_0 | 2,8 GiB | 5,6 GiB |
+
+  Proyeksi total VRAM (komponen tetap terukur 35.909 MiB; kapasitas 73.728 MiB):
+
+  | ctx | drafter F16 | drafter q4_0 |
+  | :--- | ---: | ---: |
+  | 720.896 (4x176K) | 62.661 MiB ✅ | 52.541 MiB ✅ |
+  | 786.432 (4x192K) | 65.093 MiB ✅ | 54.053 MiB ✅ |
+  | 1.048.576 (4x256K) | 74.821 MiB ❌ OOM | **60.101 MiB ✅** |
+
+  Urutan yang disarankan:
+  1. `bash scripts/dflash2_promote.sh 524288 q4_0` → ukur VRAM, TPS, acceptance; pastikan kuantisasi tidak merugikan.
+  2. Jika bersih → `bash scripts/dflash2_promote.sh 1048576 q4_0`.
+  3. Jika acceptance turun → mundur ke F16 pada `720896` atau `786432`.
 - [ ] **Task 2e:** Sinkronkan `server-optimize.sh` dengan `run-qwen.sh`, atau turunkan statusnya menjadi referensi eksplisit di `AGENTS.md`/`ARCHITECTURE.md`.
 
 ### 🧪 Phase 3: Benchmark & Throughput Verification
@@ -161,12 +181,12 @@ Build produksi `master @ 25ae3a9b3` mendukung DFlash **1**, bukan DFlash **2**. 
 
 | Kriteria Pengujian | Baseline terukur | Target dengan DFLASH 2 |
 | :--- | :--- | :--- |
-| **Single User TPS** | ~26 – 27 TPS | **≥ 70.0 TPS** |
+| **Single User TPS** | ~26 – 27 TPS | **≥ 70.0 TPS** — *terukur live: **55,21 TPS** (≈2.1x), belum tercapai* |
 | **Multi-User (4 Streams) Throughput** | ~50 – 58 TPS | **≥ 120.0 TPS** |
 | **Acceptance Length** | 1.0 (N/A) | **4.5 – 6.5 token/pass** *(eval resmi Q4_K_M: 5.39)* |
 | **Logic & Coding Accuracy** | 100% parity | **100% Parity (Zero Loss)** |
-| **Context Window Capacity** | **4 Slots x 128K (524.288)** | **4 Slots x 256K (1.048.576)** |
-| **GPU VRAM** | **47.8 GB / 72 GB** | **≤ 55 GB / 72 GB** *(proyeksi 51.5)* |
+| **Context Window Capacity** | **4 Slots x 128K (524.288)** | **4 Slots x 256K (1.048.576)** — hanya mungkin dengan KV drafter q4_0 |
+| **GPU VRAM** | **47.8 GB / 72 GB** | *terukur live @524288: **55.365 MiB** (KV drafter F16); proyeksi @1048576 dengan KV drafter q4_0: **60.101 MiB*** |
 
 ---
 

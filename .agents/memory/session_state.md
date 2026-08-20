@@ -115,51 +115,60 @@ draft acceptance = 0.64463 (156 accepted / 242 generated), mean len = 5.46
 
 ⚠️ Keterbatasan uji ini: `--device none` berarti graph DFlash 2 di jalur **CUDA** tidak tersentuh sama sekali. Itu sebabnya promote tetap gagal (lihat 2c).
 
-### 🔴 Phase 2c — Promote pertama GAGAL — root cause ditemukan
+### ✅ Phase 2c — Promote BERHASIL (percobaan ke-2, 11:22)
 
-Restart produksi pada 11:06 menghasilkan crashloop `SIGABRT` (exit 134):
+**Percobaan pertama (11:06) gagal** crashloop `SIGABRT`:
 ```
 ggml-backend.cpp:930: pre-allocated tensor (output.weight) in a buffer (CUDA2)
                       that cannot run the operation (NONE)
 ```
-Backtrace: `ggml_backend_sched_backend_id_from_cur` ← `split_graph` ← `graph_reserve` ← `resolve_fused_ops` ← `llama_context()` ← `common_speculative_init_result` — yaitu saat **konteks drafter** dibuat.
+Backtrace: `ggml_backend_sched_backend_id_from_cur` ← `split_graph` ← `graph_reserve` ← `resolve_fused_ops` ← `llama_context()` ← `common_speculative_init_result` — saat **konteks drafter** dibuat.
 
-**Root cause (terkonfirmasi):** drafter DFlash 2 **tidak punya `output.weight` maupun `tok_embd.weight` sendiri**. Tensor non-blok-nya hanya `enc.output_norm`, `fc`, `output_norm`, `selector_hidden`, `selector_predecessor`, `selector_successor` — ia **meminjam** lm_head dan embedding dari target. Dengan `--tensor-split 1,1,1`, `output.weight` target mendarat di **CUDA2**, sementara `--spec-draft-device CUDA0` membatasi scheduler konteks drafter hanya ke CUDA0 + CPU. Tensor yang sudah teralokasi di buffer CUDA2 tak bisa dijadwalkan → abort.
+**Root cause:** drafter DFlash 2 **tidak punya `output.weight` maupun `tok_embd.weight` sendiri**. Tensor non-blok-nya hanya `enc.output_norm`, `fc`, `output_norm`, `selector_hidden`, `selector_predecessor`, `selector_successor` — lm_head dan embedding **dipinjam dari target**. Dengan `--tensor-split 1,1,1`, `output.weight` target mendarat di **CUDA2**, sementara `--spec-draft-device CUDA0` membatasi scheduler konteks drafter ke CUDA0 + CPU. Tensor yang sudah teralokasi di buffer CUDA2 tak terjadwalkan → abort.
 
-Ini menjelaskan kenapa semua pelapor sukses di PR memakai **satu GPU**, dan kenapa seluruh uji CPU lolos (di sana `output.weight` ada di buffer CPU yang dikenal scheduler drafter).
+Ini menjelaskan kenapa semua pelapor sukses di PR #27342 memakai **satu GPU**, dan kenapa seluruh uji CPU lolos (di sana `output.weight` ada di buffer CPU yang dikenal scheduler drafter).
 
-**Perbaikan:** `--spec-draft-device CUDA0,CUDA1,CUDA2` — sudah dimasukkan ke [`scripts/dflash2_promote.sh`](../../scripts/dflash2_promote.sh) dan terverifikasi lewat dry-run. **Belum diuji live** karena butuh target di GPU (~29 GB VRAM), yang tidak muat berdampingan dengan produksi — perlu jendela maintenance.
-
-Bisect yang sudah dijalankan (semua dengan target di CPU, drafter di CUDA0):
-
-| Uji | Flag tambahan | Hasil |
-| :--- | :--- | :--- |
-| repro dasar | — | ✅ load & listening |
-| bisect-FULL | ctx 524288, parallel 4, batch 4096/ubatch 1024, flash-attn on, cache q4_0 | ✅ load & listening |
-| bisect-MMPROJ | + `--mmproj` | ❌ crash — tapi **backtrace berbeda** (`clip_model_loader::load_tensors` ← `mtmd_get_memory_usage`), artefak `--gpu-layers 0`, bukan penyebab produksi |
-
-### 🔬 Temuan VRAM: 1M context dan DFLASH 2 adalah satu paket
-
-Percobaan `--ctx-size 1048576` dengan drafter lama **gagal OOM**:
-
+**Perbaikan:** `--spec-draft-device CUDA0,CUDA1,CUDA2`. Promote ke-2 pada 11:22 **berhasil**:
 ```
-E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 12288.00 MiB on device 0: cudaMalloc failed: out of memory
+common_speculative_impl_draft_dflash: adding speculative implementation 'draft-dflash'
+ - n_max=7, n_min=2, block_size=8, n_extract=5, sample_from_anchor=true
+srv  llama_server: model loaded
+srv  llama_server: listening on http://0.0.0.0:8001
 ```
+Alias `qwen35` utuh, `n_ctx` 131.072/slot, 4 slot.
 
-12.288 MiB = persis KV **F16** drafter Qwen2.5-Coder-0.5B pada 1M token (`24 layer x 2 x 2 head x 64 dim x 2 B x 1.048.576`), seluruhnya ditumpuk di CUDA0 oleh `--spec-draft-device CUDA0`. Jadi yang OOM **bukan model target**, melainkan drafter lama.
+**Pengukuran live pertama:** 400 token / 7.24 s = **55.21 TPS** single stream (termasuk prompt eval) — dari baseline ~27 TPS, yaitu **≈2.1×**. Di bawah target plan 70 TPS.
 
-Proyeksi dengan DFLASH 2 pada 1.048.576 ctx:
+### 🔬 VRAM terukur & koreksi asumsi SWA
 
-| Komponen | VRAM |
-| :--- | ---: |
-| Baseline live (512K + draft-simple) | 47.8 GB |
-| ➕ KV target 512K → 1M | +9.0 GiB |
-| ➖ Buang Qwen2.5-Coder-0.5B (0.63 bobot + ~6.0 KV F16) | −6.6 GiB |
-| ➕ Bobot DFlash2 Q4_K_M | +1.1 GiB |
-| ➕ KV DFlash2 (SWA 2048) | +0.2 GiB |
-| **Proyeksi total** | **≈ 51.5 GiB / 72 GiB** |
+| | GPU0 | GPU1 | GPU2 | Total |
+| :--- | ---: | ---: | ---: | ---: |
+| Baseline `draft-simple` @ 524288 | 16.355 | 15.769 | 15.705 | **47.829 MiB** |
+| DFLASH 2 (KV drafter F16) @ 524288 | 18.737 | 18.087 | 18.541 | **55.365 MiB** |
+| Δ | +2.382 | +2.318 | +2.836 | **+7.536 MiB** |
 
-⚠️ Angka ini **proyeksi, belum diukur** — verifikasi nyata baru bisa dilakukan setelah build PR selesai.
+⚠️ **Koreksi:** catatan sebelumnya mengklaim KV drafter di-cap SWA 2048 (~0.17 GiB). **Itu salah.** `llama-model.cpp` memakai `llama_kv_cache_iswa` (cache berjendela) **hanya bila `dsv4_hc_mult > 0`**, yaitu varian **DSpark**; DFlash 2 biasa jatuh ke `default` dengan **KV ukuran penuh `n_ctx_seq`**. Metadata `dflash.attention.sliding_window = 2048` diabaikan untuk varian ini.
+
+KV drafter sebenarnya = `5 layer x 2 x 8 head x 128 dim x sizeof(type)`:
+
+| tipe | per token | @ 524288 | @ 1048576 |
+| :--- | ---: | ---: | ---: |
+| F16 | 20.480 B | 10,0 GiB | 20,0 GiB |
+| q4_0 | 5.760 B | 2,8 GiB | 5,6 GiB |
+
+Komponen tetap (bobot + mmproj + compute buffer), diturunkan dari datapoint terukur: **35.909 MiB**.
+
+### 📐 Proyeksi kapasitas context (kapasitas 73.728 MiB)
+
+| ctx | KV drafter F16 | KV drafter q4_0 |
+| :--- | ---: | ---: |
+| 655.360 (4x160K) | 60.229 MiB ✅ | 51.029 MiB ✅ |
+| 720.896 (4x176K) | 62.661 MiB ✅ | 52.541 MiB ✅ |
+| 786.432 (4x192K) | 65.093 MiB ✅ | 54.053 MiB ✅ |
+| 917.504 (4x224K) | 69.957 MiB ⚠️ tipis | 57.077 MiB ✅ |
+| **1.048.576 (4x256K)** | 74.821 MiB ❌ OOM | **60.101 MiB ✅** (20.034/GPU, sisa 4.542) |
+
+**Kesimpulan:** target 4 x 256K **tercapai**, tetapi mensyaratkan `--spec-draft-type-k q4_0 --spec-draft-type-v q4_0`. Tanpa itu, plafon praktisnya ~786K. Proyeksi ini berdiri di atas satu datapoint terukur — komponen tetap dianggap konstan terhadap ctx, jadi naikkan bertahap dan ukur, jangan lompat.
 
 ---
 
