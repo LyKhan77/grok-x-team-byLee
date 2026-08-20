@@ -249,6 +249,44 @@ Rollback: `sed -i 's|build-vfix|build|' run-qwen.sh && sudo systemctl restart ll
 
 **Catatan operasional:** `TimeoutStopUSec=1min 30s`. Proses lama menunggu generasi aktif selesai sebelum keluar, jadi restart bisa memakan sampai 90 detik sebelum systemd meng-SIGKILL. Ini normal, bukan hang.
 
+### 🔬 Phase 3 — Sweep n-max (SIAP, menunggu jendela hening)
+
+**Hipotesis:** `--spec-draft-n-max` diturunkan 7 → 4 saat acceptance masih 0,26–0,43. Setelah sampling diselaraskan ke rekomendasi Qwen, acceptance naik ke 0,70–0,82 dan `mean_len` terukur (4,27) **mentok tepat di plafon yang dipaksakan n-max 4**. Optimumnya kemungkinan bergeser kembali ke atas.
+
+**Model prediksi** (dekomposisi dari anchor terukur 400 token / 5.639 ms, mean_len 3,80):
+```
+53,6 ms per verification pass  =  13,8 ms baca bobot (26%)  +  39,8 ms overhead (74%)
+```
+Overhead ~40 ms ini **tervalidasi silang** dengan rig lain (1×4090, Q4_K_XL: 42,7 ms), memberi keyakinan pada modelnya.
+
+| Skenario | mean_len | TPS prediksi | vs sekarang |
+| :--- | ---: | ---: | ---: |
+| Q8_0 + n-max 4 (sekarang) | 3,80 | 70,6 *(terukur)* | 1,00× |
+| Q6_K + n-max 4 | 3,80 | 75,3 | 1,06× |
+| Q8_0 + **n-max 6** | ~4,80 | 89,2 | 1,26× |
+| Q8_0 + **n-max 7** | ~5,40 | 100,4 | 1,41× |
+
+⚠️ mean_len untuk n-max 6/7 adalah **ekstrapolasi**, dan model tidak memperhitungkan kenaikan biaya verifikasi (8 token vs 5 per pass) — angka 100,4 hampir pasti optimistis.
+
+**Kesimpulan Q6_K:** hanya +6%, karena bobot cuma 26% dari waktu per pass. Lever n-max 4–7× lebih besar dan gratis. Q6_K sudah diunduh (22 GB, ukuran cocok) dan disimpan sebagai opsi, **tidak dipasang**.
+
+**Perkakas siap:**
+- [`test/bench_nmax.py`](../../test/bench_nmax.py) — benchmark terkontrol, stdlib saja. Mengambil angka otoritatif dari `print_timing` server (decode TPS murni + acceptance), bukan latensi end-to-end klien. Parser terverifikasi.
+- [`scripts/dflash2_nmax_sweep.sh`](../../scripts/dflash2_nmax_sweep.sh) — orkestrasi sweep. **Butuh sudo** (systemctl restart) dan **jendela hening**. Mengembalikan n-max awal otomatis, termasuk saat di-interrupt (trap).
+
+  `sudo bash scripts/dflash2_nmax_sweep.sh 4 6 7`
+
+### 🚨 Temuan: konkurensi mendegradasi mean_len, bukan hanya waktu per pass
+
+Terukur saat 4 slot penuh:
+```
+gen=248   decode  1,51 TPS  acceptance 0,506  mean_len 3,02
+gen=1380  decode 16,60 TPS  acceptance 0,525  mean_len 3,10
+```
+Bandingkan saat lengang: decode 70,75 TPS, acceptance 0,702, mean_len 3,80–4,27.
+
+Jadi konkurensi menurunkan **acceptance itu sendiri** (0,70 → 0,51), bukan sekadar membagi GPU. Ini menjelaskan keluhan 8–15 TPS dari developer. Penyebabnya belum diketahui dan **belum diselidiki**.
+
 ---
 
 ## 5. Remaining Checklist
