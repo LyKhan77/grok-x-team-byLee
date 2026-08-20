@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Setup Script: Internal Grok Coding Agent for Team (Linux & macOS Edition)
+# Setup Script: CooperAgent (CooperxHarness - Grok Build & Pi Agent)
+# Platform: Linux & macOS Edition (Port 8987 Gateway & 256K Context)
 # Repository: https://github.com/LyKhan77/grok-x-team-byLee.git
 # ==============================================================================
 set -e
@@ -17,46 +18,32 @@ DEFAULT_MODEL_NAME="qwen35"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OS_TYPE="$(uname -s)"
 
-echo -e "${CYAN}======================================================${NC}"
-echo -e "${CYAN}   🚀 Internal Grok Coding Agent Setup (Linux & Mac)  ${NC}"
-echo -e "${CYAN}======================================================${NC}\n"
+echo -e "${CYAN}================================================================${NC}"
+echo -e "${CYAN}   🚀 CooperAgent Multi-Harness Onboarding (Linux & macOS)     ${NC}"
+echo -e "${CYAN}================================================================${NC}\n"
 
-# 1. Deteksi OS & Install binary grok
-if command -v grok &> /dev/null; then
-    echo -e "${GREEN}✔ Grok CLI terdeteksi:${NC} $(grok --version 2>/dev/null || echo 'Installed')"
-else
-    echo -e "${YELLOW}Grok CLI belum terpasang di sistem ($OS_TYPE). Menginstall binary resmi...${NC}"
-    curl -fsSL https://x.ai/cli/install.sh | bash
-    export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"
-
-    # Tambahkan path ke profil shell yang sesuai
-    if [ "$OS_TYPE" == "Darwin" ]; then
-        # macOS (Zsh default)
-        [ -f "$HOME/.zshrc" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
-        [ -f "$HOME/.bash_profile" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bash_profile"
-    else
-        # Linux (Bash default)
-        [ -f "$HOME/.bashrc" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-        [ -f "$HOME/.zshrc" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
-    fi
-fi
+# 1. Pilihan Coding Agent Harness
+echo -e "${YELLOW}Pilih Coding Agent yang ingin dipasang/dikonfigurasi:${NC}"
+echo -e "  1) Grok Build (Fullscreen Rust TUI, Visual Diff Viewer) [Rekomendasi Utama]"
+echo -e "  2) Pi Agent (Lightweight Inline CLI Coding Agent) [Alternatif Ringan]"
+echo -e "  3) Keduanya (Grok Build + Pi Agent)"
+read -rp "Pilihan [1/2/3, default: 1]: " AGENT_CHOICE
+AGENT_CHOICE=${AGENT_CHOICE:-1}
 
 # 2. Input Identitas Developer
-echo -e "\n${CYAN}--- Identitas Developer ---${NC}"
-read -rp "Masukkan nama/nickname Anda (contoh: lee, alex, budi) [default: dev-user]: " DEV_NAME
+echo -e "\n${CYAN}--- Identitas Developer (CooperxTelemetry) ---${NC}"
+read -rp "Masukkan nama/nickname Anda (contoh: lee, alex, budi, vincent) [default: dev-user]: " DEV_NAME
 DEV_NAME=${DEV_NAME:-dev-user}
-# Sanitasi nama agar hanya huruf, angka, dash, underscore
 DEV_NAME=$(echo "$DEV_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')
 [ -z "$DEV_NAME" ] && DEV_NAME="dev-user"
 echo -e "${GREEN}✔ Identitas tersimpan:${NC} ${DEV_NAME}"
 
 # 3. Pilihan Endpoint Server
-echo -e "\nPilih Endpoint AI Server Gateway yang akan digunakan:"
+echo -e "\n${CYAN}--- Endpoint CooperAgent AI Server ---${NC}"
 echo -e "  1) Jaringan LAN Kantor (${DEFAULT_LAN_ENDPOINT}) [Rekomendasi Laptop/PC Tim]"
 echo -e "  2) Localhost Server (${DEFAULT_LOCAL_ENDPOINT}) [Jika jalan langsung di server AI]"
-echo -e "  3) Custom Endpoint (IP / Domain / VPN / Cloudflare Tunnel)"
+echo -e "  3) Custom Endpoint (IP / Domain / VPN Tunnel)"
 read -rp "Pilihan [1/2/3, default: 1]: " ENDPOINT_CHOICE
-
 ENDPOINT_CHOICE=${ENDPOINT_CHOICE:-1}
 
 if [ "$ENDPOINT_CHOICE" == "1" ]; then
@@ -70,23 +57,38 @@ fi
 
 # 4. Test Koneksi ke Server (Health Check)
 HEALTH_URL="${SERVER_URL%/api/v1}/api/health"
-echo -e "\n${YELLOW}Menguji koneksi ke: ${HEALTH_URL}...${NC}"
+echo -e "\n${YELLOW}Menguji koneksi ke CooperAgent Gateway: ${HEALTH_URL}...${NC}"
 
 if curl -s --connect-timeout 5 "$HEALTH_URL" | grep -q "ok"; then
-    echo -e "${GREEN}✔ Koneksi Berhasil! API Gateway & Server AI aktif & sehat.${NC}"
+    echo -e "${GREEN}✔ Koneksi Berhasil! CooperAgent Gateway & GPU Backend aktif & sehat.${NC}"
 else
     echo -e "${RED}✖ Peringatan: Tidak dapat terhubung ke ${HEALTH_URL}.${NC}"
     echo -e "${YELLOW}Pastikan Anda berada di jaringan Wi-Fi/VPN kantor atau server AI sedang aktif.${NC}"
 fi
 
-# 5. Generate ~/.grok/config.toml
-mkdir -p "$HOME/.grok"
-CONFIG_FILE="$HOME/.grok/config.toml"
+# 5. Instalasi & Konfigurasi Grok Build (jika opsi 1 atau 3)
+if [ "$AGENT_CHOICE" == "1" ] || [ "$AGENT_CHOICE" == "3" ]; then
+    echo -e "\n${CYAN}--- Mengonfigurasi Grok Build (Rust TUI) ---${NC}"
+    if command -v grok &> /dev/null; then
+        echo -e "${GREEN}✔ Grok CLI terdeteksi:${NC} $(grok --version 2>/dev/null || echo 'Installed')"
+    else
+        echo -e "${YELLOW}Mengunduh binary Grok CLI resmi...${NC}"
+        curl -fsSL https://x.ai/cli/install.sh | bash || true
+        export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"
 
-echo -e "\nMenulis konfigurasi ke: ${CYAN}${CONFIG_FILE}${NC}..."
+        if [ "$OS_TYPE" == "Darwin" ]; then
+            [ -f "$HOME/.zshrc" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
+            [ -f "$HOME/.bash_profile" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bash_profile"
+        else
+            [ -f "$HOME/.bashrc" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+            [ -f "$HOME/.zshrc" ] && echo 'export PATH="$HOME/.grok/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
+        fi
+    fi
 
-cat <<EOF > "$CONFIG_FILE"
-# Auto-generated by Internal Team Setup Script
+    mkdir -p "$HOME/.grok"
+    CONFIG_FILE="$HOME/.grok/config.toml"
+    cat <<EOF > "$CONFIG_FILE"
+# Auto-generated by CooperAgent Setup Script
 [cli]
 auto_update = false
 
@@ -94,7 +96,7 @@ auto_update = false
 telemetry = false
 
 [session]
-auto_compact_threshold_percent = 90    # Auto-compact saat context mencapai 90% (~118K tokens)
+# auto_compact dinonaktifkan agar tidak ada jeda freeze, gunakan CooperxMemory handover
 load_envrc = true
 
 [models]
@@ -111,10 +113,10 @@ max_output_tokens = 65536
 [model.internal-qwen]
 model = "${DEFAULT_MODEL_NAME}"
 base_url = "${SERVER_URL}"
-name = "Internal Qwen 3.8 (27B Q8 - 128K Dedicated)"
-description = "Dedicated 128K Context with Auto-Compact 90% & Hybrid Sampling"
+name = "CooperAgent Qwen 3.8 (27B Q8 - 256K Dedicated)"
+description = "Dedicated 256K Monster Context Window via Port 8987 Gateway"
 api_backend = "chat_completions"
-context_window = 131072
+context_window = 262144
 max_completion_tokens = 65536
 max_tokens = 65536
 max_output_tokens = 65536
@@ -125,27 +127,46 @@ repeat_penalty = 1.1
 presence_penalty = 0.1
 api_key = "dev-${DEV_NAME}"
 EOF
+    echo -e "${GREEN}✔ Konfigurasi Grok tersimpan di: ${CONFIG_FILE}${NC}"
+fi
 
-# 6. Pasang Git Hooks Otomatis (jika git diinisialisasi)
+# 6. Konfigurasi Pi Agent (jika opsi 2 atau 3)
+if [ "$AGENT_CHOICE" == "2" ] || [ "$AGENT_CHOICE" == "3" ]; then
+    echo -e "\n${CYAN}--- Mengonfigurasi Pi Agent (Lightweight CLI) ---${NC}"
+    mkdir -p "$HOME/.pi"
+    PI_CONFIG="$HOME/.pi/config.json"
+    cat <<EOF > "$PI_CONFIG"
+{
+  "provider": "openai",
+  "base_url": "${SERVER_URL%/api/v1}/v1",
+  "api_key": "dev-${DEV_NAME}",
+  "model": "${DEFAULT_MODEL_NAME}",
+  "context_window": 262144,
+  "temperature": 0.7
+}
+EOF
+    echo -e "${GREEN}✔ Konfigurasi Pi Agent tersimpan di: ${PI_CONFIG}${NC}"
+fi
+
+# 7. Pasang Git Hooks Otomatis (jika git diinisialisasi)
 if [ -d "${SCRIPT_DIR}/.git" ]; then
     git config core.hooksPath "${SCRIPT_DIR}/scripts/hooks" 2>/dev/null || true
     echo -e "${GREEN}✔ Git pre-commit secret protection hooks diaktifkan.${NC}"
 fi
 
-# 7. Pasang command grok-standardize ke ~/.local/bin
+# 8. Pasang command standardize ke ~/.local/bin
 mkdir -p "$HOME/.local/bin"
 if [ -f "${SCRIPT_DIR}/scripts/standardize.py" ]; then
-    ln -sf "${SCRIPT_DIR}/scripts/standardize.py" "$HOME/.local/bin/grok-standardize"
-    chmod +x "$HOME/.local/bin/grok-standardize"
+    ln -sf "${SCRIPT_DIR}/scripts/standardize.py" "$HOME/.local/bin/cooper-standardize" 2>/dev/null || true
+    ln -sf "${SCRIPT_DIR}/scripts/standardize.py" "$HOME/.local/bin/grok-standardize" 2>/dev/null || true
+    chmod +x "${SCRIPT_DIR}/scripts/standardize.py"
 fi
 
-echo -e "${GREEN}✔ Konfigurasi berhasil disimpan!${NC}\n"
-
-echo -e "${CYAN}======================================================${NC}"
-echo -e "${GREEN}🎉 Setup Selesai! Cara menggunakan Grok Agent:${NC}"
-echo -e "  1. Buka terminal di folder project coding Anda."
-echo -e "  2. Jalankan: ${CYAN}grok-standardize${NC} atau ketik ${YELLOW}/standardization${NC} di chat untuk menyusun aturan proyek."
-echo -e "  3. Jalankan perintah: ${CYAN}grok${NC}"
-echo -e "  4. Model akan otomatis menggunakan [Internal Qwen 3.8 Dedicated 128K]."
-echo -e "  5. Pantau live usage & feed tim di: ${CYAN}http://192.168.2.143:8987/${NC}"
-echo -e "${CYAN}======================================================${NC}"
+echo -e "\n${CYAN}================================================================${NC}"
+echo -e "${GREEN}🎉 Setup Selesai! Selamat datang di CooperAgent!${NC}"
+echo -e "  - Menjalankan Grok Build: Ketik ${CYAN}grok${NC} di folder project Anda."
+echo -e "  - Menjalankan Pi Agent:   Ketik ${CYAN}pi${NC} di folder project Anda."
+echo -e "  - Standarisasi Project:  Ketik ${CYAN}cooper-standardize${NC} atau ${YELLOW}/standardization${NC}."
+echo -e "  - Persistensi Memori:    Gunakan ${CYAN}CooperxMemory${NC} (.agents/memory/session_state.md)."
+echo -e "  - Pantau Dashboard:      Buka ${CYAN}http://192.168.2.143:8987/${NC}"
+echo -e "${CYAN}================================================================${NC}\n"

@@ -1,69 +1,71 @@
-# 🤖 GSPExGrok Agent — Engineering & System Guide (`AGENTS.md`)
+# 🤖 CooperAgent — Engineering & System Guide (`AGENTS.md`)
 
-> **Single Source of Truth** untuk seluruh AI Coding Agent (`grok`, `agy`, dll) dan software engineer yang bekerja di repository `gspexgrok-agent`.
+> **Single Source of Truth** untuk seluruh AI Coding Agent (`grok`, `pi`, `agy`, dll) dan software engineer yang bekerja di platform **CooperAgent**.
 
 ---
 
 ## 1. Project Overview
-**GSPExGrok Agent (`gspexgrok-agent`)** adalah platform *Enterprise Coding Agent On-Premise* yang menggabungkan coding agent terminal berbasis Rust (**Fork Grok Build**) dengan backend inferensi lokal berkecepatan tinggi (**`llama.cpp` + Qwen 3.8 / 2.5 27B Q8_0**) yang berjalan pada cluster 3x NVIDIA GeForce RTX 3090.
+**CooperAgent** adalah platform *Enterprise Autonomous Coding Agent On-Premise* yang mengintegrasikan ekosistem multi-agent harness (**Grok Build TUI & Pi Agent CLI**) dengan backend inferensi lokal berkapasitas tinggi (**`CooperxCompute`: `llama.cpp` + Qwen 3.8 / 2.5 27B Q8_0 + Qwen 0.5B Speculative Accelerator**) pada cluster 3x NVIDIA GeForce RTX 3090, dipadukan dengan harness persistensi memori mandiri (**`CooperxMemory`**).
 
-Platform ini memberikan pengalaman coding agent tanpa jeda (*zero latency*), tanpa biaya API cloud, dan menjamin 100% kedaulatan data kode internal perusahaan.
+Platform ini memberikan pengalaman coding agent tanpa jeda (*zero latency*), tanpa biaya API cloud, dan menjamin 100% kedaulatan data kode internal perusahaan (*Zero Data Exfiltration*).
 
 ---
 
-## 2. Tech Stack
-- **Agent Harness:** Rust (Ratatui TUI, Async Tokio, AST search engine) — Fork dari `xai-org/grok-build`.
-- **Inference Engine:** `llama.server` (`llama.cpp` release build dengan Flash Attention `-fa` & Continuous Batching `--cont-batching`).
-- **Foundation Model:** **Qwen 3.8 / 2.5 27B** (27.32B parameters, `Q8_0` GGUF ~29.03 GB) + Multimodal Vision Projector (`mmproj-BF16.gguf`).
-- **Hardware Host:** 3x NVIDIA GeForce RTX 3090 (Total 72 GB VRAM, `--tensor-split 1,1,1`).
-- **Testing & Benchmarking:** Python 3.10+ (`httpx` async client streaming evaluation).
+## 2. Cooperx Modular Ecosystem & Naming Standards
+
+Setiap subsistem dalam platform CooperAgent distandarisasi menggunakan kode seri **`Cooperx{Feature_Name}`**:
+
+| Kode Seri Modul | Deskripsi & Cakupan Teknis |
+| :--- | :--- |
+| **`CooperxCompute`** | Engine inferensi GPU: **4 Slots x 256K Dedicated Context (Total 1.048.576 Tokens)** dengan Speculative Acceleration & KV-Cache `q4_0` di 3x RTX 3090. |
+| **`CooperxMemory`** | Harness persistensi memori mandiri berbasis riset **Claude Code** & **Hermes Agent** (*Continuous State Checkpoint* $\rightarrow$ *90% Context Warning Handover Card* $\rightarrow$ *Instant 0-Token Rehydration*). |
+| **`CooperxHarness`** | Dukungan multi-agent fleksibel yang mengintegrasikan **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di [`setup.sh`](setup.sh) & [`setup.ps1`](setup.ps1). |
+| **`CooperxTelemetry`** | API Gateway (Port `8987`) dan SQLite Token Usage Leaderboard & Slot Visualizer Dashboard. |
+| **`CooperxStandard`** | Adaptive Project Standardization Wizard (`/standardization` & `scripts/standardize.py`). |
+
+---
+
+## 3. Tech Stack
+- **Multi-Agent Harness (`CooperxHarness`):**
+  - **Grok Build:** Rust (Ratatui TUI, Async Tokio, AST search engine) — Fork dari `xai-org/grok-build`.
+  - **Pi Agent:** Lightweight Inline CLI Coding Agent.
+- **Inference Engine (`CooperxCompute`):** `llama.server` (`llama.cpp` dengan Flash Attention `-fa`, KV-Cache `q4_0`, Continuous Batching `--cont-batching`).
+- **Foundation Model:** **Qwen 3.8 / 2.5 27B** (27.32B parameters, `Q8_0` GGUF ~29.03 GB) + **Qwen 2.5 Coder 0.5B** Speculative Draft Model + Multimodal Vision Projector (`mmproj-BF16.gguf`).
+- **Hardware Host:** 3x NVIDIA GeForce RTX 3090 (Total 72 GB VRAM, `--tensor-split 1,1,1`) + Intel Core Ultra 7 265 (20 Physical Cores).
+- **Gateway & Telemetry (`CooperxTelemetry`):** Next.js 14 Streaming Proxy Interceptor + SQLite database (`usage.db`) pada Port `8987`.
 - **Remote Git Target:** `https://github.com/LyKhan77/grok-x-team-byLee.git`.
-
----
-
-## 3. Key Features
-1. **100% On-Premise Data Sovereignty:** Seluruh token prompt, source code, dan proses berpikir (*Chain of Thought*) diproses lokal tanpa telemetri eksternal.
-2. **High-Concurrency Multi-User:** Mampu melayani 4 stream developer aktif simultan secara paralel dengan throughput hingga 42.05 tokens/detik.
-3. **Adaptive Project Standardization Wizard (`/standardization`):** Kuisioner interaktif 5 pertanyaan yang secara dinamis menyusun `.agents/rules/` sesuai tech stack tiap repositori.
-4. **Native Reasoning (CoT) & Multimodal Vision:** Menampilkan pemikiran model secara collapsible di TUI dan mampu membaca tangkapan layar UI/diagram sistem.
-5. **Quality & Secret Guardrails:** Dilengkapi Git pre-commit hook untuk mencegah kebocoran kredensial atau API key.
 
 ---
 
 ## 4. Project Structure
 ```
 gspexgrok-agent/
-├── AGENTS.md                            # 📘 Panduan sistem & standar agent (File ini)
-├── ARCHITECTURE.md                      # 🏛️ Referensi arsitektur teknis lengkap platform
+├── AGENTS.md                            # 📘 Panduan sistem & standar agent CooperAgent (File ini)
+├── ARCHITECTURE.md                      # 🏛️ Cetak biru arsitektur teknis lengkap CooperAgent
 ├── CHANGELOG.md                         # 📜 Checkpoint riwayat perubahan codebase (WAJIB DIUPDATE)
-├── README.md                            # 🚀 Dokumentasi onboarding cepat developer
-├── config.default.toml                  # ⚙️ Template konfigurasi agent (~/.grok/config.toml)
-├── server-optimize.sh                   # 🖥️ Runner server llama.cpp berkapasitas tinggi (3x GPU)
-├── setup.sh                             # ⚡ 1-Click onboarding script untuk Linux & macOS (Port 8987)
-├── setup.ps1                            # 🪟 1-Click onboarding script untuk Windows PowerShell (Port 8987)
+├── README.md                            # 🚀 Dokumentasi onboarding cepat developer CooperAgent
+├── config.default.toml                  # ⚙️ Template konfigurasi agent (~/.grok/config.toml - 256K Context)
+├── server-optimize.sh                   # 🖥️ Runner CooperxCompute 4 Slots x 256K Context (3x GPU)
+├── setup.sh                             # ⚡ 1-Click onboarding Linux & macOS (Grok + Pi Agent)
+├── setup.ps1                            # 🪟 1-Click onboarding Windows PowerShell (Grok + Pi Agent)
 ├── .gitignore                           # 🛡️ Git ignore list (target/, temp/, secrets)
 │
 ├── docs/                                # 📚 Dokumentasi Lengkap Proyek
-│   ├── PRD.md                           # Product Requirement Document resmi
+│   ├── PRD.md                           # Product Requirement Document resmi CooperAgent
 │   ├── CONTEXT.md                       # AI Agent Handover Context
 │   ├── walkthrough.md                   # Laporan hasil verifikasi teknis
 │   └── plans/                           # Arsip Technical Implementation Plans
+│       ├── cooperagent_master_plan.md   # Master Plan CooperAgent & Cooperx Modules
 │       ├── port_8987_and_developer_identity_plan.md
 │       ├── model_speed_optimization_q8_plan.md
-│       ├── fase3_stress_test_plan.md
-│       ├── fase4_adaptive_standardization_plan.md
-│       ├── fork_and_customization_plan.md
-│       └── repo_integration_plan.md
+│       └── fase3_stress_test_plan.md
 │
 ├── test/                                # 🧪 Test Suite & Hasil Benchmark
 │   ├── benchmark_concurrency.py         # Engine pengujian beban streaming async
 │   ├── run_stress_test.sh               # Runner otomatis pengujian beban 1, 2, 4 stream
 │   └── results/                         # Laporan performa terverifikasi
-│       ├── benchmark_report.md          # Laporan markdown metrik TTFT & throughput
-│       ├── benchmark_results.json       # Raw metrics output
-│       └── gpu_vram_log.csv             # Perekaman utilisasi VRAM 3x RTX 3090 per detik
 │
-├── dashboard/                           # 📈 Next.js Telemetry & API Gateway
+├── dashboard/                           # 📈 CooperxTelemetry Dashboard & API Gateway (Port 8987)
 │   ├── DESIGN.md                        # 🎨 Aturan desain UI TUI / Manpage
 │   ├── README.md                        # 📖 Panduan setup dashboard
 │   ├── PRD.md                           # 📋 Product requirements dashboard
@@ -71,18 +73,23 @@ gspexgrok-agent/
 │   └── src/components/                  # 🧩 React TUI Components
 │
 ├── scripts/                             # 🛠️ Tooling & Otomasi
-│   ├── standardize.py                   # Wizard standarisasi proyek interaktif
+│   ├── standardize.py                   # Wizard standarisasi proyek (CooperxStandard)
 │   └── hooks/
 │       └── pre-commit                   # Secret scanner & commit quality hook
 │
-├── .agents/                             # 🤖 Standar Aturan & Skills Coding Agent
-│   ├── rules/                           # Aturan coding aktif (.md) hasil wizard
-│   └── skills/
-│       └── standardization/
-│           └── SKILL.md                 # Definisi slash command /standardization
-│
-└── temp/                                # 🗑️ Ephemeral / Scratch Files Saja (Untracked)
-    └── README.md
+└── .agents/                             # 🤖 Standar Aturan & Skills Coding Agent
+    ├── rules/                           # Aturan coding aktif (.md)
+    │   ├── 00-project-context.md        # Konteks proyek & arsitektur
+    │   ├── 01-coding-standards.md       # Standar kode
+    │   ├── 02-git-workflow.md           # Konvensi git commit
+    │   ├── 03-testing-guidelines.md     # Panduan testing
+    │   ├── 04-security-privacy.md       # Guardrail keamanan
+    │   └── 05-cooperx-memory.md         # Standar persistensi memori CooperxMemory
+    ├── memory/                          # Direktori ledger memori kerja
+    │   └── session_state.template.md    # Template handover CooperxMemory
+    └── skills/
+        └── standardization/
+            └── SKILL.md                 # Definisi slash command /standardization
 ```
 
 ---
@@ -91,40 +98,28 @@ gspexgrok-agent/
 
 | Perintah | Deskripsi | Lokasi File |
 | :--- | :--- | :--- |
-| `./setup.sh` | Onboarding 1-Click untuk Linux & macOS | [setup.sh](setup.sh) |
+| `./setup.sh` | Onboarding 1-Click untuk Linux & macOS (Pilihan Grok & Pi) | [setup.sh](setup.sh) |
 | `.\setup.ps1` | Onboarding 1-Click untuk Windows PowerShell | [setup.ps1](setup.ps1) |
-| `./server-optimize.sh` | Menjalankan `llama-server` multi-user di host GPU | [server-optimize.sh](server-optimize.sh) |
+| `./server-optimize.sh` | Menjalankan CooperxCompute (4 Slots x 256K Context) di host GPU | [server-optimize.sh](server-optimize.sh) |
 | `./test/run_stress_test.sh` | Menjalankan stress test & benchmark multi-stream | [test/run_stress_test.sh](test/run_stress_test.sh) |
-| `python3 scripts/standardize.py` | Menjalankan wizard standarisasi adaptif | [scripts/standardize.py](scripts/standardize.py) |
+| `python3 scripts/standardize.py` | Menjalankan wizard standarisasi adaptif (CooperxStandard) | [scripts/standardize.py](scripts/standardize.py) |
 | `/standardization` | Slash command interaktif di chat agent | [.agents/skills/standardization/SKILL.md](.agents/skills/standardization/SKILL.md) |
 
 ---
 
 ## 6. Coding Conventions & Guardrails
 1. **Filosofi YAGNI & Kesederhanaan:** Prioritaskan solusi paling minimal, bersih, dan langsung bekerja. Hindari spekulasi abstraksi yang berlebihan.
-2. **Conventional Commits:** Semua pesan commit wajib mengikuti format baku:
-   - `feat:` (fitur baru), `fix:` (perbaikan bug), `refactor:` (restrukturisasi kode), `test:` (penambahan/update tes), `docs:` (dokumentasi), `chore:` (tooling/konfigurasi).
-3. **Test-Driven / Verified First:** Setiap fungsionalitas baru wajib divalidasi dengan pengujian otomatis sebelum dinyatakan selesai.
+2. **State-First & CooperxMemory Protocol:** Selalu catat milestone ke `.agents/memory/session_state.md` dan checklist `plan.md`. Pada context 90%, gunakan Handover Card dan `/clear` untuk rehidrasi instan 0 token.
+3. **Conventional Commits:** Semua pesan commit wajib mengikuti format baku: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 4. **Zero-Secret Policy:** Dilarang keras menaruh API key, password, atau credential mentah di source code.
-5. **Folder Hygeine:**
+5. **Folder Hygiene:**
    - Semua dokumentasi wajib di `docs/`.
    - Semua script pengujian dan hasil benchmark wajib di `test/` dan `test/results/`.
    - Folder `temp/` hanya untuk scratch file sementara.
 
 ---
 
-## 7. Current State & Roadmap Milestones
-- [x] **Fase 1: Inference & Prototype Validation** — Selesai (Qwen 27B Q8 pada 3x RTX 3090, 131k context, ~27.5 tok/s single stream).
-- [x] **Fase 2: Forking & Onboarding Automation** — Selesai (`setup.sh`, `server-optimize.sh`, `config.default.toml`).
-- [x] **Fase 3: Multi-User Scale & Concurrency Testing** — Selesai (Benchmark 1-4 stream sukses, peak throughput 42 tok/s, VRAM aman di 15.5 GB).
-- [x] **Fase 4: Adaptive Standardization & Project Restructuring** — Selesai (Wizard `scripts/standardize.py`, slash command `/standardization`, `AGENTS.md`, `CHANGELOG.md`, `docs/`, `test/`).
-- [x] **Fase 5: Git Remote Synchronization & Upstream Merge** — Selesai (Tersinkronisasi penuh ke `https://github.com/LyKhan77/grok-x-team-byLee.git`).
-- [x] **Fase 6: Telemetry Dashboard (MVP)** — Selesai (API Gateway, Llama Poller, Live Feed, dan implementasi UI Dark Mode TUI/Manpage dari `dashboard/DESIGN.md`).
-- [x] **Fase 7: Token Usage Tracker (Module 3)** — Selesai (Integrasi SQLite untuk melacak pemakaian token *developer* secara real-time via API Gateway `tee` stream).
-
----
-
-## 8. 🚨 MANDATORY PROTOCOL: Update `CHANGELOG.md`
+## 7. 🚨 MANDATORY PROTOCOL: Update `CHANGELOG.md`
 > [!CRITICAL]
 > **Setiap kali AI Agent atau developer melakukan modifikasi arsitektur, penambahan script, pembaruan konfigurasi, atau penyelesaian task:**
 >

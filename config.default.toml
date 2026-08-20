@@ -1,5 +1,5 @@
-# Konfigurasi Default Grok Build untuk Tim Internal AI (128K Dedicated Context & Auto-Compact 90%)
-# Simpan file ini di: ~/.grok/config.toml
+# Konfigurasi Default CooperAgent (Grok Build) untuk Tim Internal AI (256K Dedicated Context)
+# Simpan file ini di: ~/.grok/config.toml (Linux/Mac) atau %USERPROFILE%\.grok\config.toml (Windows)
 
 [cli]
 auto_update = false
@@ -8,7 +8,7 @@ auto_update = false
 telemetry = false
 
 [session]
-auto_compact_threshold_percent = 90    # Auto-compact saat context mencapai 90% (~118K tokens)
+# auto_compact dinonaktifkan agar tidak ada jeda freeze, gunakan CooperxMemory handover
 load_envrc = true
 
 [models]
@@ -22,14 +22,14 @@ max_completion_tokens = 65536
 max_tokens = 65536
 max_output_tokens = 65536
 
-# Konfigurasi Model Utama Qwen 27B melalui Central Gateway Port 8987
+# Konfigurasi Model Utama Qwen 27B melalui Central Gateway Port 8987 (CooperxCompute)
 [model.internal-qwen]
 model = "qwen35"
 base_url = "http://192.168.2.143:8987/api/v1"
-name = "Internal Qwen 3.8 / 2.5 (27B Q8 - 128K Dedicated)"
-description = "Dedicated 128K Context with Auto-Compact 90% & Hybrid Sampling"
+name = "CooperAgent Qwen 3.8 / 2.5 (27B Q8 - 256K Dedicated)"
+description = "Dedicated 256K Monster Context Window via Port 8987 Gateway"
 api_backend = "chat_completions"
-context_window = 131072
+context_window = 262144
 max_completion_tokens = 65536
 max_tokens = 65536
 max_output_tokens = 65536
@@ -44,9 +44,9 @@ api_key = "dev-user"
 [model.internal-qwen-localhost]
 model = "qwen35"
 base_url = "http://127.0.0.1:8987/api/v1"
-name = "Localhost Qwen (Direct Server Gateway)"
+name = "Localhost CooperAgent (Direct Server Gateway)"
 api_backend = "chat_completions"
-context_window = 131072
+context_window = 262144
 max_completion_tokens = 65536
 max_tokens = 65536
 max_output_tokens = 65536

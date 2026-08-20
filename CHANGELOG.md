@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+- **CooperAgent Ecosystem & Cooperx Module Branding:** Re-branding platform menjadi **`CooperAgent`** dengan standarisasi modul kode seri **`Cooperx{Feature}`** (`CooperxCompute`, `CooperxMemory`, `CooperxHarness`, `CooperxTelemetry`, dan `CooperxStandard`).
+- **CooperxCompute (4 Slots x 256K Context = 1,048,576 Total Tokens):** Peningkatan kapasitas inferensi server menjadi 4 developer slots independen dengan dedicated 262.144 tokens per slot di 3x RTX 3090 menggunakan kuantisasi KV-cache `q4_0` dan Speculative Acceleration (`--spec-draft-n-max 8`).
+- **CooperxMemory Autonomous Persistence Harness:** Implementasi standar persistensi memori mandiri terinspirasi dari Claude Code & Hermes Agent: *Continuous State Checkpointing* (`.agents/memory/session_state.md`), *90% Context Limit Warning Handover Card*, dan *Instant 0-Token Rehydration* tanpa jeda *compaction freeze*.
+- **CooperxHarness Multi-Agent Integration (Pi Agent + Grok Build):** Penambahan integrasi otomatis Pi Agent (Lightweight Inline CLI) dan Grok Build (Fullscreen Rust TUI) di skrip onboarding cross-platform `setup.sh` dan `setup.ps1`.
 - **System Architecture Blueprint (`ARCHITECTURE.md`):** Penerbitan dokumen arsitektur teknis resmi mencakup topologi 2-tier (Port 8987 Gateway & Port 8001 GPU Backend), Speculative Decoding acceleration, alokasi VRAM 3x RTX 3090, 128K context auto-compact 90%, dan Mermaid sequence diagrams.
 - **Public Port 8987 Consolidation:** Mengalihkan seluruh antarmuka publik tim (Web Dashboard, API Gateway, dan Health Check) ke port terpadu `8987`, sementara port `8001` tetap menjadi port privat inferensi GPU.
 - **Developer Nickname Identity Tracking:** Menambahkan sistem identifikasi developer (`Authorization: Bearer dev-<nickname>`) pada `setup.sh`, `setup.ps1`, `config.default.toml`, dan API Gateway Next.js, sehingga **LIVE_FEED** dan **Token Tracker** menampilkan nama developer (misal: `lee (192.168.2.45)`).

@@ -1,5 +1,6 @@
 # ==============================================================================
-# Setup Script: Internal Grok Coding Agent for Team (Windows PowerShell Edition)
+# Setup Script: CooperAgent (CooperxHarness - Grok Build & Pi Agent)
+# Platform: Windows PowerShell Edition (Port 8987 Gateway & 256K Context)
 # Repository: https://github.com/LyKhan77/grok-x-team-byLee.git
 # ==============================================================================
 
@@ -11,27 +12,21 @@ $DEFAULT_LOCAL_ENDPOINT = "http://127.0.0.1:8987/api/v1"
 $DEFAULT_MODEL_NAME = "qwen35"
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-Write-Host "======================================================" -ForegroundColor Cyan
-Write-Host "   🚀 Internal Grok Coding Agent Setup (Windows PowerShell) " -ForegroundColor Cyan
-Write-Host "======================================================`n" -ForegroundColor Cyan
+Write-Host "=================================================================" -ForegroundColor Cyan
+Write-Host "   🚀 CooperAgent Multi-Harness Setup (Windows PowerShell)       " -ForegroundColor Cyan
+Write-Host "=================================================================`n" -ForegroundColor Cyan
 
-# 1. Deteksi / Install binary grok
-if (Get-Command "grok" -ErrorAction SilentlyContinue) {
-    Write-Host "✔ Grok CLI terdeteksi di sistem." -ForegroundColor Green
-} else {
-    Write-Host "Grok CLI belum terdeteksi di PATH." -ForegroundColor Yellow
-    Write-Host "Mengunduh installer resmi xAI Grok untuk Windows..." -ForegroundColor Yellow
-    try {
-        Invoke-Expression (Invoke-RestMethod "https://x.ai/cli/install.ps1")
-        $env:PATH += ";$($env:USERPROFILE)\.grok\bin;$($env:LOCALAPPDATA)\Programs\grok\bin"
-    } catch {
-        Write-Host "✖ Gagal mengunduh installer otomatis. Silakan pasang Grok CLI manual jika diperlukan." -ForegroundColor Red
-    }
-}
+# 1. Pilihan Coding Agent Harness
+Write-Host "Pilih Coding Agent yang ingin dipasang/dikonfigurasi:" -ForegroundColor Yellow
+Write-Host "  1) Grok Build (Fullscreen Rust TUI, Visual Diff Viewer) [Rekomendasi Utama]"
+Write-Host "  2) Pi Agent (Lightweight Inline CLI Coding Agent) [Alternatif Ringan]"
+Write-Host "  3) Keduanya (Grok Build + Pi Agent)"
+$AGENT_CHOICE = Read-Host "Pilihan [1/2/3, default: 1]"
+if ([string]::IsNullOrWhiteSpace($AGENT_CHOICE)) { $AGENT_CHOICE = "1" }
 
-# 2. Input Identitas Developer (untuk tracking di Dashboard tim)
-Write-Host "`n--- Identitas Developer ---" -ForegroundColor Cyan
-$DEV_NAME = Read-Host "Masukkan nama/nickname Anda (contoh: lee, alex, budi) [default: dev-user]"
+# 2. Input Identitas Developer
+Write-Host "`n--- Identitas Developer (CooperxTelemetry) ---" -ForegroundColor Cyan
+$DEV_NAME = Read-Host "Masukkan nama/nickname Anda (contoh: lee, alex, budi, vincent) [default: dev-user]"
 if ([string]::IsNullOrWhiteSpace($DEV_NAME)) {
     $DEV_NAME = "dev-user"
 }
@@ -40,10 +35,10 @@ if ([string]::IsNullOrWhiteSpace($DEV_NAME)) { $DEV_NAME = "dev-user" }
 Write-Host "✔ Identitas tersimpan: $DEV_NAME" -ForegroundColor Green
 
 # 3. Pilihan Endpoint Server
-Write-Host "`nPilih Endpoint AI Server Gateway yang akan digunakan:"
+Write-Host "`n--- Endpoint CooperAgent AI Server ---" -ForegroundColor Cyan
 Write-Host "  1) Jaringan LAN Kantor ($DEFAULT_LAN_ENDPOINT) [Rekomendasi Laptop/PC Tim]"
 Write-Host "  2) Localhost Server ($DEFAULT_LOCAL_ENDPOINT) [Jika jalan langsung di server AI]"
-Write-Host "  3) Custom Endpoint (IP / Domain / VPN / Cloudflare Tunnel)"
+Write-Host "  3) Custom Endpoint (IP / Domain / VPN Tunnel)"
 $choice = Read-Host "Pilihan [1/2/3, default: 1]"
 
 if ([string]::IsNullOrWhiteSpace($choice) -or $choice -eq "1") {
@@ -61,12 +56,12 @@ if ([string]::IsNullOrWhiteSpace($choice) -or $choice -eq "1") {
 
 # 4. Test Koneksi ke Server (Health Check)
 $HEALTH_URL = $SERVER_URL.TrimEnd('/api/v1').TrimEnd('/v1') + "/api/health"
-Write-Host "`nMenguji koneksi ke: $HEALTH_URL..." -ForegroundColor Yellow
+Write-Host "`nMenguji koneksi ke CooperAgent Gateway: $HEALTH_URL..." -ForegroundColor Yellow
 
 try {
     $response = Invoke-RestMethod -Uri $HEALTH_URL -TimeoutSec 5 -ErrorAction Stop
     if ($response.status -eq "ok" -or "$response" -match "ok") {
-        Write-Host "✔ Koneksi Berhasil! API Gateway & Server AI aktif & sehat." -ForegroundColor Green
+        Write-Host "✔ Koneksi Berhasil! CooperAgent Gateway & GPU Backend aktif & sehat." -ForegroundColor Green
     } else {
         Write-Host "✔ Terhubung ke Gateway." -ForegroundColor Green
     }
@@ -75,88 +70,116 @@ try {
     Write-Host "Pastikan Anda terhubung ke Wi-Fi kantor / VPN dan server AI sedang aktif." -ForegroundColor Yellow
 }
 
-# 5. Generate %USERPROFILE%\.grok\config.toml
-$GROK_DIR = Join-Path $env:USERPROFILE ".grok"
-if (-not (Test-Path $GROK_DIR)) {
-    New-Item -ItemType Directory -Path $GROK_DIR -Force | Out-Null
+# 5. Instalasi & Konfigurasi Grok Build (jika opsi 1 atau 3)
+if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
+    Write-Host "`n--- Mengonfigurasi Grok Build (Rust TUI) ---" -ForegroundColor Cyan
+    if (Get-Command "grok" -ErrorAction SilentlyContinue) {
+        Write-Host "✔ Grok CLI terdeteksi di sistem." -ForegroundColor Green
+    } else {
+        Write-Host "Mengunduh installer resmi xAI Grok untuk Windows..." -ForegroundColor Yellow
+        try {
+            Invoke-Expression (Invoke-RestMethod "https://x.ai/cli/install.ps1")
+            $env:PATH += ";$($env:USERPROFILE)\.grok\bin;$($env:LOCALAPPDATA)\Programs\grok\bin"
+        } catch {
+            Write-Host "✖ Gagal mengunduh installer otomatis. Silakan pasang Grok CLI manual jika diperlukan." -ForegroundColor Red
+        }
+    }
+
+    $GROK_DIR = Join-Path $env:USERPROFILE ".grok"
+    if (-not (Test-Path $GROK_DIR)) {
+        New-Item -ItemType Directory -Path $GROK_DIR -Force | Out-Null
+    }
+
+    $CONFIG_FILE = Join-Path $GROK_DIR "config.toml"
+    $configLines = @(
+        "# Auto-generated by CooperAgent Setup Script (Windows Edition)",
+        "[cli]",
+        "auto_update = false",
+        "",
+        "[features]",
+        "telemetry = false",
+        "",
+        "[session]",
+        "load_envrc = true",
+        "",
+        "[models]",
+        "default = ""internal-qwen""",
+        "stream_tool_calls = true",
+        "temperature = 0.7",
+        "top_p = 0.85",
+        "min_p = 0.05",
+        "repeat_penalty = 1.1",
+        "max_completion_tokens = 65536",
+        "max_tokens = 65536",
+        "max_output_tokens = 65536",
+        "",
+        "[model.internal-qwen]",
+        "model = ""$DEFAULT_MODEL_NAME""",
+        "base_url = ""$SERVER_URL""",
+        "name = ""CooperAgent Qwen 3.8 (27B Q8 - 256K Dedicated)""",
+        "description = ""Dedicated 256K Monster Context Window via Port 8987 Gateway""",
+        "api_backend = ""chat_completions""",
+        "context_window = 262144",
+        "max_completion_tokens = 65536",
+        "max_tokens = 65536",
+        "max_output_tokens = 65536",
+        "temperature = 0.7",
+        "top_p = 0.85",
+        "min_p = 0.05",
+        "repeat_penalty = 1.1",
+        "presence_penalty = 0.1",
+        "api_key = ""dev-$DEV_NAME"""
+    )
+    $configContent = $configLines -join "`r`n"
+    [System.IO.File]::WriteAllText($CONFIG_FILE, $configContent, [System.Text.Encoding]::UTF8)
+    Write-Host "✔ Konfigurasi Grok tersimpan di: $CONFIG_FILE" -ForegroundColor Green
 }
 
-$CONFIG_FILE = Join-Path $GROK_DIR "config.toml"
-Write-Host "`nMenulis konfigurasi ke: $CONFIG_FILE..." -ForegroundColor Cyan
+# 6. Konfigurasi Pi Agent (jika opsi 2 atau 3)
+if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
+    Write-Host "`n--- Mengonfigurasi Pi Agent (Lightweight CLI) ---" -ForegroundColor Cyan
+    $PI_DIR = Join-Path $env:USERPROFILE ".pi"
+    if (-not (Test-Path $PI_DIR)) {
+        New-Item -ItemType Directory -Path $PI_DIR -Force | Out-Null
+    }
+    $PI_CONFIG = Join-Path $PI_DIR "config.json"
+    $baseV1 = $SERVER_URL.TrimEnd('/api/v1').TrimEnd('/v1') + "/v1"
+    $piJson = @{
+        provider = "openai"
+        base_url = $baseV1
+        api_key = "dev-$DEV_NAME"
+        model = $DEFAULT_MODEL_NAME
+        context_window = 262144
+        temperature = 0.7
+    } | ConvertTo-Json -Depth 4
+    [System.IO.File]::WriteAllText($PI_CONFIG, $piJson, [System.Text.Encoding]::UTF8)
+    Write-Host "✔ Konfigurasi Pi Agent tersimpan di: $PI_CONFIG" -ForegroundColor Green
+}
 
-$configLines = @(
-    "# Auto-generated by Internal Team Setup Script (Windows Edition)",
-    "[cli]",
-    "auto_update = false",
-    "",
-    "[features]",
-    "telemetry = false",
-    "",
-    "[session]",
-    "auto_compact_threshold_percent = 90    # Auto-compact saat context mencapai 90% (~118K tokens)",
-    "load_envrc = true",
-    "",
-    "[models]",
-    "default = ""internal-qwen""",
-    "stream_tool_calls = true",
-    "temperature = 0.7",
-    "top_p = 0.85",
-    "min_p = 0.05",
-    "repeat_penalty = 1.1",
-    "max_completion_tokens = 65536",
-    "max_tokens = 65536",
-    "max_output_tokens = 65536",
-    "",
-    "[model.internal-qwen]",
-    "model = ""$DEFAULT_MODEL_NAME""",
-    "base_url = ""$SERVER_URL""",
-    "name = ""Internal Qwen 3.8 (27B Q8 - 128K Dedicated)""",
-    "description = ""Dedicated 128K Context with Auto-Compact 90% & Hybrid Sampling""",
-    "api_backend = ""chat_completions""",
-    "context_window = 131072",
-    "max_completion_tokens = 65536",
-    "max_tokens = 65536",
-    "max_output_tokens = 65536",
-    "temperature = 0.7",
-    "top_p = 0.85",
-    "min_p = 0.05",
-    "repeat_penalty = 1.1",
-    "presence_penalty = 0.1",
-    "api_key = ""dev-$DEV_NAME"""
-)
-
-$configContent = $configLines -join "`r`n"
-[System.IO.File]::WriteAllText($CONFIG_FILE, $configContent, [System.Text.Encoding]::UTF8)
-
-# 6. Pasang Git Hooks Otomatis (jika git diinisialisasi)
+# 7. Pasang Git Hooks Otomatis (jika git diinisialisasi)
 if (Test-Path (Join-Path $SCRIPT_DIR ".git")) {
     $hooksPath = (Join-Path $SCRIPT_DIR "scripts/hooks").Replace("\", "/")
     git config core.hooksPath "$hooksPath" 2>$null
     Write-Host "✔ Git pre-commit secret protection hooks diaktifkan." -ForegroundColor Green
 }
 
-# 7. Pasang grok-standardize shortcut untuk Windows
+# 8. Pasang shortcut standardize untuk Windows
 $LOCAL_BIN = Join-Path $env:USERPROFILE ".local\bin"
 if (-not (Test-Path $LOCAL_BIN)) {
     New-Item -ItemType Directory -Path $LOCAL_BIN -Force | Out-Null
 }
 
 $standardizePy = Join-Path $SCRIPT_DIR "scripts\standardize.py"
-$cmdWrapper = Join-Path $LOCAL_BIN "grok-standardize.cmd"
-$ps1Wrapper = Join-Path $LOCAL_BIN "grok-standardize.ps1"
-
 if (Test-Path $standardizePy) {
-    "@echo off`r`npython `"$standardizePy`" %*" | Out-File -FilePath $cmdWrapper -Encoding ascii
-    "& python `"$standardizePy`" `$args" | Out-File -FilePath $ps1Wrapper -Encoding utf8
-    Write-Host "✔ Shortcut grok-standardize berhasil dipasang." -ForegroundColor Green
+    "@echo off`r`npython `"$standardizePy`" %*" | Out-File -FilePath (Join-Path $LOCAL_BIN "cooper-standardize.cmd") -Encoding ascii
+    "@echo off`r`npython `"$standardizePy`" %*" | Out-File -FilePath (Join-Path $LOCAL_BIN "grok-standardize.cmd") -Encoding ascii
+    Write-Host "✔ Shortcut cooper-standardize berhasil dipasang." -ForegroundColor Green
 }
 
-Write-Host "✔ Konfigurasi berhasil disimpan!`n" -ForegroundColor Green
-
-Write-Host "======================================================" -ForegroundColor Cyan
-Write-Host "🎉 Setup Selesai! Cara menggunakan Grok Agent di Windows:" -ForegroundColor Green
-Write-Host "  1. Buka PowerShell / Terminal di folder project coding Anda."
-Write-Host "  2. Jalankan: grok"
-Write-Host "  3. Model akan otomatis menggunakan [Internal Qwen 3.8 Dedicated 128K]."
-Write-Host "  4. Pantau live usage & feed tim di: http://192.168.2.143:8987/"
-Write-Host "======================================================" -ForegroundColor Cyan
+Write-Host "`n=================================================================" -ForegroundColor Cyan
+Write-Host "🎉 Setup Selesai! Selamat datang di CooperAgent (Windows)!" -ForegroundColor Green
+Write-Host "  - Menjalankan Grok:      Ketik 'grok' di PowerShell folder project Anda."
+Write-Host "  - Menjalankan Pi Agent:  Ketik 'pi' di PowerShell folder project Anda."
+Write-Host "  - Persistensi Memori:    Gunakan CooperxMemory (.agents/memory/session_state.md)."
+Write-Host "  - Pantau Dashboard:      Buka http://192.168.2.143:8987/"
+Write-Host "=================================================================" -ForegroundColor Cyan
