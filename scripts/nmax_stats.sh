@@ -11,13 +11,17 @@
 # dan yang terukur adalah kondisi kerja sesungguhnya.
 # ==============================================================================
 SINCE="${1:-today}"
+# n-max aktif saat ini, dipakai sebagai fallback bila jendela waktu tidak memuat
+# penanda "n_max=" (penanda itu hanya dicetak sekali saat server start).
+CURRENT_NMAX=$(grep -oE '"'"'--spec-draft-n-max [0-9]+'"'"' /home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh 2>/dev/null | grep -oE '"'"'[0-9]+'"'"')
+CURRENT_NMAX="${CURRENT_NMAX:-0}"
 journalctl -u llamacpp.service --no-pager --since "$SINCE" 2>/dev/null \
   | sed 's/^.*run-qwen.sh\[[0-9]*\]: //' \
   | grep -E "n_max=|draft acceptance|\| +eval time =" \
-  | python3 -c '
-import re, sys
-cur = None
-g = {}
+  | CURRENT_NMAX="$CURRENT_NMAX" python3 -c '
+import re, sys, os
+cur = int(os.environ.get("CURRENT_NMAX", 0)) or None
+g = {} if cur is None else {cur: []}
 pend = {}
 for l in sys.stdin:
     m = re.search(r"n_max=(\d+)", l)
@@ -47,6 +51,9 @@ for n in sorted(g):
     p90 = lambda a: a[min(len(a)-1, int(len(a)*0.9))]
     print(f"{n:>6}{len(rs):>7}{sum(ml)/len(ml):>10.2f}{sum(ac)/len(ac):>12.3f}{med(tp):>10.1f}{p90(tp):>10.1f}")
 print()
+if not any(g.values()):
+    print("  (tidak ada request pada rentang waktu ini)")
+    print()
 print("mean_len = token diterima per verification pass -> penggerak utama TPS")
 print("TPS median dipakai, bukan rata-rata, karena beban produksi sangat skewed")
 '
