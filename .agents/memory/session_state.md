@@ -170,6 +170,55 @@ Komponen tetap (bobot + mmproj + compute buffer), diturunkan dari datapoint teru
 
 **Kesimpulan:** target 4 x 256K **tercapai**, tetapi mensyaratkan `--spec-draft-type-k q4_0 --spec-draft-type-v q4_0`. Tanpa itu, plafon praktisnya ~786K. Proyeksi ini berdiri di atas satu datapoint terukur — komponen tetap dianggap konstan terhadap ctx, jadi naikkan bertahap dan ukur, jangan lompat.
 
+### ✅ Phase 3 — Tuning terukur (2026-08-20 14:xx)
+
+Konfigurasi produksi saat ini (`run-qwen.sh`), semua terverifikasi live:
+
+```
+--spec-type draft-dflash  --spec-draft-device CUDA0,CUDA1,CUDA2  --spec-draft-n-max 4
+--ctx-size 688128  --parallel 4        -> n_ctx_slot = 172.032 (168K/user), kv_unified = false
+--cache-ram 0                          -> --cache-idle-slots otomatis nonaktif
+--temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0
+--repeat-penalty 1.0 --repeat-last-n 0 --reasoning-effort xhigh
+--cache-type-k/v q4_0  --ubatch-size 1024  --flash-attn on  --mmproj aktif
+```
+
+| Metrik | Sebelum tuning | Sesudah |
+| :--- | ---: | ---: |
+| TPS konkuren | 13,1 | **25,3** |
+| Acceptance rate | 0,26 – 0,43 | **0,70 – 0,78** |
+| Mean len | 2,84 – 3,99 | 3,81 – 4,10 |
+| Context per user | 131.072 | **172.032** |
+| VRAM | 55.457 (75%) | **59.565 (80%)** |
+
+⚠️ Rasio TPS 1,9x bersifat indikatif — "sebelum" diukur dengan 3 sekuens aktif, "sesudah" dengan 2. Acceptance rate tidak ambigu (metrik sama, banyak sampel).
+
+**Yang terbukti berhasil:**
+- Sampling default Qwen3.8 thinking-mode. `repeat-penalty 1.10` bekerja di setiap langkah dan menolak draft token; mematikannya menaikkan acceptance ~2x.
+- `--spec-draft-n-max 7 -> 4`. Acceptance ~3 membuat draft 7 token memboroskan verifikasi.
+- Alokasi statis 4x168K: adil secara konstruksi, tiap user dijamin porsinya.
+
+### ❌ Percobaan `--kv-unified` — GAGAL, jangan diulang tanpa uji ulang
+
+Dicoba pada pool 655.360, hasilnya regresi berat:
+- VRAM **69.997 MiB (94%)** versus proyeksi 60.321 — meleset 9,7 GB
+- Latensi kolaps: request **16 token = 35,4 detik** dengan 3 slot sibuk
+
+Dua penyebab yang dicurigai (tidak dipisahkan): tekanan VRAM di 94%, dan penggusuran slot idle ke prompt cache RAM yang menyalin KV gigabyte pada **setiap task baru**.
+
+**Penyebab meleset proyeksi:** model VRAM saya hanya menghitung KV dan mengabaikan buffer yang berskala `n_ctx_seq`. `--kv-unified` menaikkan `n_ctx_seq` dari `n_ctx/n_parallel` menjadi `n_ctx` (di-cap `n_ctx_train` = 262.144), sehingga buffer tersebut membengkak.
+
+**Trade-off yang perlu diingat:** `--kv-unified` dinamis tetapi **tidak adil** — tidak ada cap per-slot, satu sesi rakus bisa menghabiskan pool. Alokasi statis adil secara konstruksi. llama.cpp tidak menyediakan mekanisme yang dinamis sekaligus adil.
+
+### 🔬 Lever kecepatan yang BELUM dicoba
+1. `--spec-draft-p-min` (default 0.00) — menghentikan drafting saat drafter tidak yakin; menyasar pemborosan verifikasi di bawah konkurensi.
+2. `--spec-draft-n-max 3` — turunkan lagi dari 4.
+3. Hapus `--tensor-split`, jalankan 3 instance single-GPU dengan bobot Q4/Q6. Berpotensi terbesar; artikel Inco AI membuktikan model + drafter muat di satu GPU 24 GB pada Q4.
+
+### 📦 Aset tersedia
+- `Qwen3.8-27B-UD-Q6_K.gguf` sedang diunduh (~11 GB dari 22 GB) untuk opsi Langkah 3. Hapus bila tidak dipakai.
+- Bobot Q6_K membebaskan ~6,6 GiB dibanding Q8_0 dan memberi decode ~1,3x lebih cepat (decode = 91,7% waktu server).
+
 ---
 
 ## 5. Remaining Checklist
