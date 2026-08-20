@@ -32,9 +32,26 @@ ORIG=$(grep -oE '\-\-spec-draft-n-max [0-9]+' "$RUNNER" | grep -oE '[0-9]+')
 [ -f "$BENCH" ] || { echo "ERROR: benchmark tidak ditemukan: $BENCH"; exit 1; }
 mkdir -p "$OUTDIR"
 
+BUSY=$(curl -s -m 8 http://127.0.0.1:8001/slots 2>/dev/null | python3 -c "import json,sys;print(sum(1 for x in json.load(sys.stdin) if x.get('"'"'is_processing'"'"')))" 2>/dev/null || echo "?")
+if [ "$BUSY" != "0" ]; then
+  echo "!!! ADA $BUSY SLOT SIBUK. Benchmark akan mengantre di belakang user dan"
+  echo "!!! angkanya TIDAK VALID untuk membandingkan n-max. Setiap restart juga"
+  echo "!!! membunuh request developer yang sedang berjalan."
+  read -r -p ">>> Tetap lanjutkan? (ketik YA): " ANS
+  [ "$ANS" = "YA" ] || { echo "Dibatalkan."; exit 1; }
+fi
+
 echo "n-max awal: $ORIG   |   akan diuji: ${VALUES[*]}"
 echo "Setiap langkah: ubah config -> restart -> tunggu sehat -> benchmark"
 echo
+
+ABORTED=0
+on_interrupt() {
+  ABORTED=1
+  echo; echo ">>> DIINTERUPSI -- menghentikan sweep dan mengembalikan config"
+  restore
+  exit 130
+}
 
 restore() {
   echo; echo ">>> Mengembalikan n-max ke $ORIG"
@@ -42,7 +59,7 @@ restore() {
   systemctl restart llamacpp.service
   echo ">>> Dikembalikan. Verifikasi manual: systemctl status llamacpp.service"
 }
-trap restore INT TERM
+trap on_interrupt INT TERM
 
 for N in "${VALUES[@]}"; do
   echo "=============================================================="

@@ -81,7 +81,17 @@ export async function checkHealth(): Promise<{ status: string }> {
 
 export async function getSlots(): Promise<SlotsSummary & { totalTokensToday: number }> {
   const res = await fetchWithTimeout(`${LLAMA_URL}/slots`);
-  const raw: any[] = await res.json();
+  const payload: any = await res.json().catch(() => null);
+
+  // llama-server mengembalikan objek error (bukan array) saat restart, saat semua
+  // slot sibuk, atau saat endpoint /slots dinonaktifkan. Tanpa penjagaan ini,
+  // raw.map melempar "TypeError: raw.map is not a function" dan seluruh
+  // /api/telemetry/live gagal -- membuat dashboard tampak mati padahal server sehat.
+  const raw: any[] = Array.isArray(payload) ? payload : [];
+  if (!Array.isArray(payload)) {
+    console.warn('[llama-poller] /slots bukan array (server restart?):',
+                 JSON.stringify(payload)?.slice(0, 200));
+  }
   const now = Date.now();
 
   const details: SlotDetail[] = raw.map((slot: any) => {

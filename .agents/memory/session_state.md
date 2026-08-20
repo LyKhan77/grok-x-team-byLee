@@ -287,6 +287,48 @@ Bandingkan saat lengang: decode 70,75 TPS, acceptance 0,702, mean_len 3,80–4,2
 
 Jadi konkurensi menurunkan **acceptance itu sendiri** (0,70 → 0,51), bukan sekadar membagi GPU. Ini menjelaskan keluhan 8–15 TPS dari developer. Penyebabnya belum diketahui dan **belum diselidiki**.
 
+### 🔬 n-max: sweep GAGAL, diganti pengukuran beban nyata
+
+**Sweep terkontrol gagal total.** Dijalankan saat 4 slot sibuk, sehingga benchmark mengantre di belakang user dan yang terukur adalah antrean, bukan model: n-max 4 → 2,3 TPS, n-max 6 → 1,5 TPS, n-max 7 → 59,9 TPS. Selisih 40× itu murni perbedaan beban.
+
+**Dua bug skrip yang menyebabkan kekacauan (sudah diperbaiki):**
+1. `trap restore INT TERM` mengembalikan config **tetapi loop tetap lanjut** — Ctrl-C tidak menghentikan sweep, ia terus ke n-max berikutnya. Diperbaiki dengan `exit 130` di handler.
+2. Tidak ada pemeriksaan slot idle di awal. Ditambahkan; kini menolak jalan bila ada slot sibuk kecuali dikonfirmasi ketik `YA`.
+
+⚠️ **Kesalahan proses:** skrip diedit **saat sedang berjalan**. Bash membaca skrip secara inkremental, sehingga perilakunya jadi tak terduga. Jangan ulangi.
+
+**Metode pengganti:** [`scripts/nmax_stats.sh`](../../scripts/nmax_stats.sh) — membaca `print_timing` dari journal, dikelompokkan per n-max. Tidak mengirim request sama sekali, jadi nol kontaminasi dan nol gangguan.
+
+**Hasil (periode config identik, sejak 14:45 — ctx 688128 statis + sampling Qwen):**
+
+| n-max | n req | mean_len | acceptance | TPS median | VRAM |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 4 | 30 | 3,21 | 0,553 | 13,7 | 59.491 (80,7%) |
+| **6** | 7 | **3,79** | 0,468 | 13,6 | **60.527 (82,1%)** |
+| 7 | 2 | 4,33 | 0,478 | 82,2 *(abaikan, n=2)* | 61.125 (82,9%) |
+
+**Temuan:** `mean_len` naik monoton dengan n-max (+18% dari 4 ke 6). Acceptance *rate* turun — wajar, menebak lebih banyak berarti proporsi diterima lebih kecil — tetapi **token diterima per pass naik**, dan itulah penggerak TPS.
+
+**Ini membalik alasan penurunan 7→4 sebelumnya.** Asumsi "acceptance rendah membuat n-max tinggi boros" tidak didukung data.
+
+**Belum terbukti:** TPS median 4 vs 6 praktis sama (13,7 vs 13,6) dengan n=7. Di beban nyata, TPS didominasi konkurensi dan ukuran context, bukan `mean_len` saja. **n-max 6 dipasang di produksi sejak ~16:45** untuk mengumpulkan sampel; bandingkan nanti dengan `bash scripts/nmax_stats.sh "16:45"`.
+
+### 🔴 Masalah dominan yang belum selesai: sesi klien tidak pernah compact
+
+Terukur berulang: sesi mencapai **172.031 token** — persis plafon slot. Sesi Grok yang sedang berjalan masih memegang `context_window = 262144` di memori dari sebelum config diperbarui, sehingga ambang compaction (90% × 262.144 = 235K) **tidak akan pernah tercapai**.
+
+Akibatnya context tumbuh sampai mentok, dan biaya attention yang tumbuh dengan context mencekik seluruh cluster:
+
+| ukuran context | TPS rata² |
+| :--- | ---: |
+| < 5K | 23,5 |
+| 5K – 25K | 17,0 |
+| > 60K | 9,5 |
+
+Terpantau dua task selesai pada **0,4 dan 0,5 TPS** saat berjalan bersama sekuens 115K.
+
+**Setiap developer wajib me-restart sesi Grok** — termasuk `budi` (192.168.2.103), developer ketiga yang mudah terlewat. Tanpa itu, tuning apa pun akan tertutup oleh masalah ini dalam hitungan jam.
+
 ---
 
 ## 5. Remaining Checklist
