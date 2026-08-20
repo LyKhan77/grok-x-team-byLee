@@ -219,6 +219,36 @@ Dua penyebab yang dicurigai (tidak dipisahkan): tekanan VRAM di 94%, dan penggus
 - `Qwen3.8-27B-UD-Q6_K.gguf` sedang diunduh (~11 GB dari 22 GB) untuk opsi Langkah 3. Hapus bila tidak dipakai.
 - Bobot Q6_K membebaskan ~6,6 GiB dibanding Q8_0 dan memberi decode ~1,3x lebih cepat (decode = 91,7% waktu server).
 
+### ✅ Phase 3b — Vision fix + hasil akhir (2026-08-20 15:45)
+
+**Vision terbukti rusak** dan sudah diperbaiki. Uji langsung dengan gambar PNG 64x64 (merah kiri-atas, biru kanan-bawah, putih di dua kuadran sisanya):
+
+```
+SEBELUM: HTTP 500 decode() failed: failed to process speculative batch
+SESUDAH: "Red is in the top-left, blue in the bottom-right, and white fills
+          the other two squares."   <- faktual benar, 8,6 detik
+```
+
+Penyebab: target Qwen3.8 memakai M-RoPE; baris embedding dari chunk gambar mtmd membawa posisi non-linear yang tidak dapat disimpan draft cache 1D DFlash. Perbaikan dari [z-lab/llama.cpp-fork PR #1](https://github.com/z-lab/llama.cpp-fork/pull/1) (1 file, +74/-5), patch tersimpan di [`scripts/dflash2_vision_fix.patch`](../../scripts/dflash2_vision_fix.patch). **PR upstream masih open.**
+
+Binary produksi kini: **`/home/gspe-ai1/llama.cpp-dflash2/build-vfix/bin/llama-server`**
+Rollback: `sed -i 's|build-vfix|build|' run-qwen.sh && sudo systemctl restart llamacpp.service`
+
+**Hasil akhir terukur:**
+
+| Metrik | Awal sesi | Akhir |
+| :--- | ---: | ---: |
+| Decode TPS single-stream | ~27 | **70,75** ← target plan >=70 tercapai |
+| Acceptance rate | 0,26 - 0,43 | **0,66 - 0,82** |
+| Mean len | 2,84 - 3,99 | 3,64 - 4,27 |
+| Context per user | 131.072 | **172.032** (adil, dijamin) |
+| VRAM | 55.457 (75%) | **59.329 (80%)** |
+| Vision | 🔴 HTTP 500 | ✅ berfungsi |
+
+⚠️ TPS di bawah konkurensi masih bervariasi — task 20517 (4.299 token, context panjang) hanya 10,41 TPS meski acceptance 0,817. Belum ada benchmark terkontrol; `test/benchmark_concurrency.py` siap, butuh jendela hening.
+
+**Catatan operasional:** `TimeoutStopUSec=1min 30s`. Proses lama menunggu generasi aktif selesai sebelum keluar, jadi restart bisa memakan sampai 90 detik sebelum systemd meng-SIGKILL. Ini normal, bukan hang.
+
 ---
 
 ## 5. Remaining Checklist
