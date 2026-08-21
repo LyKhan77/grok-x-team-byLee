@@ -115,3 +115,21 @@ sehingga tidak mungkin memasang gerbang yang langsung memblokir start.
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-install-hardening.sh (baru)
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/systemd/override.conf
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-preflight.sh
+
+### Pengerasan systemd — TERPASANG & terverifikasi (2026-08-21 09:16)
+
+StartLimitIntervalUSec 10s→10min, Burst 5→3, TimeoutStopUSec 2min,
+ExecStartPre=/usr/local/bin/llamacpp-preflight.sh, Environment kosong.
+Backup config lama: /etc/systemd/system/llamacpp.service.d/override.conf.bak
+Server tidak terganggu (daemon-reload saja); uptime proses tetap dari 08:58,
+ketiga GPU aktif via prefix inline run-qwen.sh.
+
+Efek samping menguntungkan: dengan Environment kosong, jika prefix inline
+CUDA_VISIBLE_DEVICES suatu saat terhapus, llama.cpp jatuh ke default semua GPU
+(0,1,2) — bukan 2 GPU lalu OOM seperti sebelumnya.
+
+**Belum teruji:** gerbang ExecStartPre belum pernah benar-benar dieksekusi karena
+server belum restart sejak pemasangan. Uji nyata pertama = restart berikutnya.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-safe-restart.sh

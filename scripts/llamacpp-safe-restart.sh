@@ -8,6 +8,10 @@
 #   --force     restart segera tanpa menunggu idle (memutus request berjalan)
 set -euo pipefail
 
+# Gagal cepat: tanpa ini skrip menunggu idle sampai 15 menit lalu baru
+# tersandung di systemctl restart karena bukan root.
+[[ $EUID -eq 0 ]] || { echo "Jalankan dengan sudo: sudo $0 $*"; exit 1; }
+
 WAIT=900; FORCE=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
