@@ -309,3 +309,31 @@ default server (20).
 - /home/gspe-ai1/project/gspexgrok-agent/setup.sh
 - /home/gspe-ai1/project/gspexgrok-agent/setup.ps1
 - /home/gspe-ai1/project/gspexgrok-agent/dashboard/src/app/api/telemetry/live/route.ts
+
+### AGENTS.md: satu-satunya jalur otomatis, dan isinya basi (2026-08-21)
+
+Temuan mekanisme: Grok CLI membaca `AGENTS.md`/`CLAUDE.md` lalu MENEMPELKANNYA ke
+system prompt (sumber: ~/.grok/README.md "Grok reads these files and appends their
+contents to the system prompt"). Berkas di `.agents/rules/` TIDAK dibaca otomatis.
+
+Dua kesenjangan yang ditemukan saat audit, bukan dilaporkan user:
+1. AGENTS.md tidak pernah menyuruh agent MEMBACA memory di awal sesi — hanya
+   menyuruh mencatat. Rehydration bergantung sepenuhnya pada manusia mengetik
+   "Lanjutkan sessions/<dev-id>.md".
+2. Nilainya basi: 4 slot, ctx 524288, KV q4_0, ambang 90%, dan "Target 4x256K
+   menunggu DFLASH 2" padahal DFLASH 2 sudah live.
+
+Diperbaiki: nilai diselaraskan (3 slot, 393216, q8_0, n-max 5, 80%), pohon
+.agents diperbarui (sessions/, archive/, checkpoint skill), dan ditambahkan
+bagian "Protokol Sesi" berisi baca-di-awal / tulis-di-batas-tugas / ambang 80%.
+
+Dua tempat penyimpanan yang TERPISAH:
+- Transkrip Grok: ~/.grok/sessions/<path-proyek-terenkode>/<uuid>/ — lokal mesin,
+  tidak di git, dipakai --resume.
+- CooperxMemory: .agents/memory/ di repo — ter-commit, terbagi lintas mesin & dev.
+
+AGENTS.md kini ~3.300 token dan berada di puncak prefix stabil; mengubahnya
+membatalkan prompt cache semua sesi satu kali.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md

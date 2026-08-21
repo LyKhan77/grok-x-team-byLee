@@ -17,8 +17,8 @@ Setiap subsistem dalam platform CooperAgent distandarisasi menggunakan kode seri
 
 | Kode Seri Modul | Deskripsi & Cakupan Teknis |
 | :--- | :--- |
-| **`CooperxCompute`** | Engine inferensi GPU pada 3x RTX 3090: **4 Slots paralel, live `--ctx-size 524288` (4 x 128K)**, KV-Cache `q4_0`, Speculative Acceleration. Target 4 x 256K (1.048.576 token) menunggu integrasi DFLASH 2 — lihat [`.agents/memory/session_state.md`](.agents/memory/session_state.md) §2. |
-| **`CooperxMemory`** | Harness persistensi memori mandiri berbasis riset **Claude Code** & **Hermes Agent** (*Continuous State Checkpoint* $\rightarrow$ *90% Context Warning Handover Card* $\rightarrow$ *Instant 0-Token Rehydration*). |
+| **`CooperxCompute`** | Engine inferensi GPU pada 3x RTX 3090: **3 slot paralel, `--ctx-size 393216` (3 x 128K)**, KV-Cache `q8_0`, DFLASH 2 speculative decoding aktif (`--spec-draft-n-max 5`). Plafon 131.072 token per user bukan batas VRAM melainkan batas kinerja: di atas ~128K throughput runtuh — lihat [`docs/plans/multistream_scaling.md`](docs/plans/multistream_scaling.md). |
+| **`CooperxMemory`** | Harness persistensi memori mandiri berbasis riset **Claude Code** & **Hermes Agent** (*Continuous State Checkpoint* $\rightarrow$ *80% Context Warning Handover Card* $\rightarrow$ *Instant 0-Token Rehydration*). |
 | **`CooperxHarness`** | Dukungan multi-agent fleksibel yang mengintegrasikan **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di [`setup.sh`](setup.sh) & [`setup.ps1`](setup.ps1). |
 | **`CooperxTelemetry`** | API Gateway (Port `8987`) dan SQLite Token Usage Leaderboard & Slot Visualizer Dashboard. |
 | **`CooperxStandard`** | Adaptive Project Standardization Wizard (`/standardization` & `scripts/standardize.py`). |
@@ -29,7 +29,7 @@ Setiap subsistem dalam platform CooperAgent distandarisasi menggunakan kode seri
 - **Multi-Agent Harness (`CooperxHarness`):**
   - **Grok Build:** Rust (Ratatui TUI, Async Tokio, AST search engine) — Fork dari `xai-org/grok-build`.
   - **Pi Agent:** Lightweight Inline CLI Coding Agent.
-- **Inference Engine (`CooperxCompute`):** `llama.server` (`llama.cpp` dengan Flash Attention `-fa`, KV-Cache `q4_0`, Continuous Batching `--cont-batching`).
+- **Inference Engine (`CooperxCompute`):** `llama.server` (`llama.cpp` dengan Flash Attention `-fa`, KV-Cache `q8_0`, Continuous Batching `--cont-batching`).
 - **Foundation Model:** **Qwen 3.8 / 2.5 27B** (27.32B parameters, `Q8_0` GGUF ~29.03 GB) + **Qwen 2.5 Coder 0.5B** Speculative Draft Model + Multimodal Vision Projector (`mmproj-BF16.gguf`).
 - **Hardware Host:** 3x NVIDIA GeForce RTX 3090 (Total 72 GB VRAM, `--tensor-split 1,1,1`) + Intel Core Ultra 7 265 (20 Physical Cores).
 - **Gateway & Telemetry (`CooperxTelemetry`):** Next.js 14 Streaming Proxy Interceptor + SQLite database (`usage.db`) pada Port `8987`.
@@ -86,10 +86,15 @@ gspexgrok-agent/
     │   ├── 04-security-privacy.md       # Guardrail keamanan
     │   └── 05-cooperx-memory.md         # Standar persistensi memori CooperxMemory
     ├── memory/                          # Direktori ledger memori kerja
-    │   └── session_state.template.md    # Template handover CooperxMemory
+    │   ├── session_state.md             # Ledger proyek BERSAMA (semua developer)
+    │   ├── session_state.template.md    # Template ledger
+    │   └── sessions/                    # Namespace PER developer
+    │       ├── _template.md             # Salin ini saat sesi pertama
+    │       ├── <dev-id>.md              # Checkpoint milik satu developer
+    │       └── archive/                 # Sesi lama yang sudah diarsipkan
     └── skills/
-        └── standardization/
-            └── SKILL.md                 # Definisi slash command /standardization
+        ├── checkpoint/SKILL.md          # Slash command /checkpoint
+        └── standardization/SKILL.md     # Slash command /standardization
 ```
 
 ---
@@ -109,7 +114,56 @@ gspexgrok-agent/
 
 ## 6. Coding Conventions & Guardrails
 1. **Filosofi YAGNI & Kesederhanaan:** Prioritaskan solusi paling minimal, bersih, dan langsung bekerja. Hindari spekulasi abstraksi yang berlebihan.
-2. **State-First & CooperxMemory Protocol:** Selalu catat milestone ke `.agents/memory/session_state.md` dan checklist `plan.md`. Pada context 90%, gunakan Handover Card dan `/clear` untuk rehidrasi instan 0 token.
+
+## Protokol Sesi (WAJIB — ini satu-satunya berkas yang dibaca otomatis)
+
+Berkas ini ditempelkan ke system prompt setiap sesi. Aturan lengkap ada di
+`.agents/rules/05-cooperx-memory.md`, tetapi berkas itu **tidak** dibaca otomatis —
+jadi tiga hal berikut harus dijalankan tanpa menunggu diminta.
+
+### 1. Awal sesi — BACA dulu, jangan langsung bekerja
+
+Sebelum menjawab permintaan pertama, baca berurutan:
+
+```
+.agents/memory/sessions/<dev-id>.md     # checkpoint developer ini
+.agents/memory/session_state.md         # ledger proyek bersama
+```
+
+Lalu konfirmasi dalam 3 baris: **Active Task**, **Next Steps**, **Blockers**.
+Konfirmasi ini wajib — tanpanya, melanjutkan dari state basi tidak akan ketahuan.
+
+Bila `sessions/<dev-id>.md` belum ada, salin `sessions/_template.md`.
+
+### 2. Selama sesi — tulis checkpoint di batas tugas
+
+Perbarui `sessions/<dev-id>.md` setiap kali sebuah milestone berpindah ke `[x]`,
+sebuah bug terverifikasi selesai, atau sebuah keputusan arsitektural diambil —
+**berapa pun context saat itu.** Ambang 80% adalah jaring pengaman, bukan jadwal.
+
+Meringkas di tengah investigasi menghasilkan ringkasan tentang keadaan setengah
+jadi, dan sesi berikutnya mewarisi kebingungan itu.
+
+### 3. Ambang 80% (104.858 token) — handover, bukan auto-compact
+
+| | nilai |
+| :--- | ---: |
+| `n_ctx` per slot | 131.072 |
+| Ambang handover | 104.858 (80%) |
+| Plafon keras | 128.000 |
+| `max_tokens` | 12.288 |
+
+Di atas ~128.000 token throughput runtuh ke ~1,5 TPS, sehingga compaction yang
+dipicu di sana memakan waktu sangat lama dan berujung timeout. Handover +
+rehydration menelan ~1.500 token; inline compaction menelan menit.
+
+**Jangan resume context lama** untuk melanjutkan tugas. Mulai sesi bersih lalu
+baca checkpoint — resume memaksa prefill 100K+ token yang menyumbang 72% beban
+prefill server.
+
+---
+
+2. **State-First & CooperxMemory Protocol:** Lihat §Protokol Sesi di bawah. Ringkasnya: **baca** memori di awal sesi, **tulis** checkpoint di tiap batas tugas, handover pada context **80%** (104.858 token).
 3. **Conventional Commits:** Semua pesan commit wajib mengikuti format baku: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 4. **Zero-Secret Policy:** Dilarang keras menaruh API key, password, atau credential mentah di source code.
 5. **Folder Hygiene:**
