@@ -97,3 +97,21 @@ crashloop efektif tak terbatas — load butuh ~40s, jadi burst 5/10s mustahil te
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-safe-restart.sh (baru)
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-preflight.sh (baru)
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/systemd/override.conf (baru, belum dipasang)
+
+### Pengerasan systemd — installer siap, menunggu sudo user
+
+`sudo` di sesi agen minta password, jadi pemasangan dilakukan user.
+Installer: `scripts/llamacpp-install-hardening.sh` (idempoten, `--uninstall` tersedia).
+
+**Koreksi rancangan:** drop-in versi pertama menunjuk `ExecStartPre` ke dalam repo
+git. Checkout branch lain akan menghapus skrip dari disk → `ExecStartPre` gagal →
+server tidak mau start. Gerbang keamanan berubah jadi mode kegagalan baru.
+Diperbaiki: skrip dipasang ke `/usr/local/bin`, di luar kendali git.
+
+Installer menolak memasang drop-in bila preflight gagal pada config saat ini,
+sehingga tidak mungkin memasang gerbang yang langsung memblokir start.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-install-hardening.sh (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/systemd/override.conf
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-preflight.sh
