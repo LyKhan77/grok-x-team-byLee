@@ -68,3 +68,32 @@ Mengumpulkan sampel n-max 6 dari beban nyata. Pengukuran pertama (18 request, ti
 (teratasi 2026-08-20 ~16:45 — tim sudah restart sesi Grok; dev 1 mulai baru, dev 2 resume. Sesi yang di-resume membawa riwayat ~108K sehingga mulai dekat plafon, tetapi config barunya termuat sehingga compaction kini berfungsi.)
 
 *Riwayat:* Sesi Grok yang berjalan masih memegang `context_window = 262144` dari sebelum config diperbarui, sehingga ambang compaction (235K) tidak akan pernah tercapai dan sesi tumbuh sampai plafon slot 172.032. Pada context >60K, TPS rata-rata jatuh ke 9,5 versus 23,5 di bawah 5K. **Selama ini belum diperbaiki, perbandingan n-max akan tenggelam dalam noise.** Perbaikannya di luar kendali server — setiap developer harus restart sesinya sendiri.
+
+## 2026-08-21 — override-kv 168K + n-max 7 + pengerasan restart
+
+**Status:** diterapkan ke produksi, server sehat, VRAM 83,2% (band 80–84% terpenuhi).
+
+Perubahan `run-qwen.sh` (backup: `run-qwen.sh.bak.20260821-085652`):
+- `+ --override-kv qwen35.context_length=int:172032` — agar klien (Grok CLI) membaca
+  `n_ctx_train` = 168K, bukan 262K, sehingga auto-compact terpicu tepat waktu.
+- `--spec-draft-n-max 6 → 7` — uji apakah `mean_len` naik >5% dari baseline 4,07.
+
+**Baseline pembanding n-max 6:** 39 request, mean_len 4,07, acceptance 0,512,
+TPS median 27,3. Putusan: pertahankan n-max 7 bila mean_len ≥ 4,27; jika tidak,
+`./scripts/dflash2_apply_ctx_override.sh --rollback`.
+
+**Belum terverifikasi:** apakah Grok CLI benar-benar menampilkan 168K. Log server
+tidak mencetak `n_ctx_train` pada verbositas ini — hanya terlihat dari sisi klien.
+
+**Temuan:** drop-in `/etc/systemd/system/llamacpp.service.d/override.conf` berisi
+`CUDA_VISIBLE_DEVICES=0,1` (sisa konfigurasi lama, 2 GPU). Tidak berbahaya sekarang
+karena `run-qwen.sh` menimpanya inline dengan `0,1,2`, tapi jadi jebakan kalau prefix
+inline itu suatu saat dihapus. `StartLimitIntervalSec=10s` juga membuat batas
+crashloop efektif tak terbatas — load butuh ~40s, jadi burst 5/10s mustahil tercapai.
+
+## Files Modified
+- /home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/dflash2_apply_ctx_override.sh (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-safe-restart.sh (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-preflight.sh (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/systemd/override.conf (baru, belum dipasang)
