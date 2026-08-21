@@ -534,3 +534,44 @@ tetap dipertahankan karena itu yang terdokumentasi.
 - /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
 - /home/gspe-ai1/project/gspexgrok-agent/.agents/rules/05-cooperx-memory.md
 - /home/gspe-ai1/project/gspexgrok-agent/docs/harness_scope.md
+
+### PENYEBAB PASTI "compaction failed" DITEMUKAN (2026-08-21)
+
+Dari ~/.grok/sessions/<proj>/<uuid>/compaction_requests/*.json:
+
+  "compact failed: exceeded wall-clock budget 300s (runaway generation)"
+
+Grok punya BATAS WAKTU KERAS 300 detik per percobaan compaction, 3 percobaan
+per permintaan. Tidak terdokumentasi di README maupun docs.x.ai.
+
+Bukti dari sesi game-1 (19 Agu):
+  04:30 ed8c8a38 - 3 percobaan GAGAL semua (900s)
+  04:46 65a6b342 - 3 percobaan GAGAL semua (900s)
+  05:01 e6a3281e - percobaan 1,2 gagal; percobaan 3 BERHASIL (11.978 char)
+Total 04:30 -> 05:01 = 31 menit. INILAH 15-20 menit yang dilaporkan user:
+bukan satu compaction lambat, melainkan rentetan timeout 300 detik.
+
+KONSEKUENSI OPERASIONAL: ringkasan ~3.422 token / 300 s = **11,4 TPS MINIMUM**.
+Di bawah itu compaction MUSTAHIL selesai, berapa kali pun diulang.
+
+Metadata lain: trigger=auto (tidak berhenti, tidak bertanya ke user),
+prompt_variant=detailed (ADA varian lain), model=qwen35, user_context=None
+(inilah slot argumen /compact <context>). Ada juga mekanisme terpisah
+recap_requests/ yang jauh ringan: 71-93 token.
+
+### REGRESI SETELAH 168K — 3 SLOT JATUH DI BAWAH AMBANG COMPACTION
+
+TPS/user 3 slot, sebelum vs sesudah ctx 131K->168K:
+  ctx 131K (11:41-16:07): <64K 21,1 | 64-96K 18,8 | 96-128K 15,7  agregat 63/56/47
+  ctx 168K (sejak 16:07): <64K  9,7 |            - | 96-128K  5,8  agregat 29/-/17
+
+Median 3 slot sekarang 8,3 TPS -> 54,1% sampel DI BAWAH 11,4 TPS.
+Artinya compaction akan gagal ~separuh waktu. 2 slot masih sehat (22,7/22,4/20,5).
+
+Dugaan sebab: VRAM 84,1% (naik dari 75,3%), compute buffer tumbuh 2.408 MiB.
+Data baru ~30 menit, jadi belum konklusif, tetapi arah dan besarannya konsisten.
+
+REKOMENDASI: rollback ke 131K via scripts/cooperx_apply_ctx168k.sh --rollback
+
+## Files Modified
+- (tidak ada perubahan kode; temuan pengukuran)
