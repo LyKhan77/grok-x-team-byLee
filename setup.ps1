@@ -145,7 +145,7 @@ if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
         "name = 'CooperAgent Qwen 3.8 (27B Q8 - 168K Dedicated)'",
         "description = 'Dedicated 168K Dedicated Context Window via Port 8987 Gateway'",
         "api_backend = 'chat_completions'",
-        "context_window = 172032",
+        "context_window = 131072",
         "max_completion_tokens = 12288",
         "max_tokens = 12288",
         "max_output_tokens = 12288",

@@ -269,3 +269,24 @@ Dua kegagalan di mesin dev Windows, keduanya diperbaiki:
 ## Files Modified
 - /home/gspe-ai1/project/gspexgrok-agent/.gitattributes (baru)
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
+
+### Celah sampling di mesin dev tertutup (2026-08-21)
+
+Patch pertama menyelaraskan context_window/max_tokens/temperature/top_p, tetapi
+MELEWATKAN min_p, repeat_penalty, presence_penalty. Mesin dev Lee tersisa
+min_p 0.05, repeat_penalty 1.1, presence_penalty 0.1 — menyimpang dari mode
+thinking resmi Qwen3.8 (0.0 / 1.0 / 0.0).
+
+Ini bukan kosmetik: parameter sampling dari klien MENIMPA setelan server pada
+API OpenAI-compatible, jadi --repeat-penalty 1.0 dan --repeat-last-n 0 di server
+tidak melindungi. repeat_penalty 1.1 + presence_penalty 0.1 menekan penalaran
+panjang, berlawanan dengan reasoning-effort xhigh.
+
+Diperbaiki di grok_client_patch.sh (+ top_k -> 20 bila ada). Juga diselaraskan:
+config.default.toml, setup.sh, setup.ps1 -> context_window 131072.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
+- /home/gspe-ai1/project/gspexgrok-agent/config.default.toml
+- /home/gspe-ai1/project/gspexgrok-agent/setup.sh
+- /home/gspe-ai1/project/gspexgrok-agent/setup.ps1

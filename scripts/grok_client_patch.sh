@@ -57,9 +57,18 @@ cp "$CFG" "$TMP"
 sed -i -E 's/^([[:space:]]*context_window[[:space:]]*=[[:space:]]*)[0-9]+/\1131072/' "$TMP"
 # 2. plafon output: 65536 membuat auto-compact mustahil terpicu (akar compaction failed)
 sed -i -E 's/^([[:space:]]*(max_tokens|max_output_tokens|max_completion_tokens)[[:space:]]*=[[:space:]]*)[0-9]+/\112288/' "$TMP"
-# 3. sampling: samakan dengan mode thinking resmi Qwen3.8 yang dipakai server
+# 3. sampling: samakan PENUH dengan mode thinking resmi Qwen3.8 yang dipakai
+#    server: temp 1.0, top_p 0.95, top_k 20, min_p 0.0, repeat 1.0, presence 0.0
 sed -i -E 's/^([[:space:]]*temperature[[:space:]]*=[[:space:]]*).*/\11.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*top_p[[:space:]]*=[[:space:]]*).*/\10.95/' "$TMP"
+# min_p/repeat_penalty/presence_penalty di luar nilai resmi thinking-mode Qwen3.8
+# akan MENIMPA setelan server, karena parameter sampling dari klien menang pada
+# API OpenAI-compatible. repeat_penalty 1.1 + presence_penalty 0.1 khususnya
+# menekan penalaran panjang — persis yang tidak diinginkan pada reasoning xhigh.
+sed -i -E 's/^([[:space:]]*min_p[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
+sed -i -E 's/^([[:space:]]*repeat_penalty[[:space:]]*=[[:space:]]*).*/\11.0/' "$TMP"
+sed -i -E 's/^([[:space:]]*presence_penalty[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
+sed -i -E 's/^([[:space:]]*top_k[[:space:]]*=[[:space:]]*).*/\120/' "$TMP"
 # 4. label yang menyesatkan -> 128K
 sed -i -E 's/Monster Context Window/Context Window/g; s/[0-9]+K (Dedicated|Monster Context Window|Context Window)/128K \1/g' "$TMP"
 
