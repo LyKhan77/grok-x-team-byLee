@@ -88,19 +88,20 @@ rencana, sehingga compaction memang harus terjadi di sana.
 Posisi sekarang:
 
 ```
-auto_compact_threshold_percent = 80     # jaring pengaman NATIVE
+auto_compact_threshold_percent = 88     # jaring pengaman NATIVE
 handover di batas tugas                 # jalur utama, kualitas ringkasan lebih baik
 ```
 
 Aritmetika untuk `context_window = 172.032`:
 
 ```
-80% = 137.626 token + max_tokens 12.288 = 149.914   <= plafon slot 172.032   ✔
-74% = 127.303 token + max_tokens 12.288 = 139.591   cadangan bila tebing 128K terbukti
+88% = 151.388 token + max_tokens 12.288 = 163.676   <= plafon slot 172.032   ✔
+85% = 146.227 token + max_tokens 12.288 = 158.515   cadangan bila truncation muncul
 ```
 
-Pada fase 1, 137.626 sengaja di atas 128.000 agar sampel context 128-160K muncul
-dan tebing kinerja dapat diukur oleh `scripts/concurrency_stats.sh`.
+88% dipilih dari pengukuran pertumbuhan per giliran (p90 = 6.421 token), bukan
+dari angka bulat: margin 8.356 menampung 91,5% giliran. Truncation sudah terjadi
+2x hari ini pada n_tokens 172.031 — bukan risiko teoretis.
 
 ## Yang TIDAK kita bangun
 

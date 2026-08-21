@@ -96,8 +96,8 @@ auto_update = false
 telemetry = false
 
 [session]
-# Compaction NATIVE Grok sebagai jaring pengaman pada 80% (104.858 token).
-auto_compact_threshold_percent = 80
+# Compaction NATIVE Grok sebagai jaring pengaman pada 88% (151.388 token).
+auto_compact_threshold_percent = 88
 load_envrc = true
 
 # Memory native Grok — DEFAULT false. Ini yang membuat agent mengingat inti

@@ -69,18 +69,18 @@ sed -i -E 's/^([[:space:]]*min_p[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*repeat_penalty[[:space:]]*=[[:space:]]*).*/\11.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*presence_penalty[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*top_k[[:space:]]*=[[:space:]]*).*/\120/' "$TMP"
-# 3b. compaction native Grok: 80% x 172.032 = 137.626 token. Default Grok 85%
+# 3b. compaction native Grok: 88% x 172.032 = 151.388 token. Default Grok 85%
 #     SENGAJA di atas 128.000 pada fase ini: tanpa sampel context 128-160K,
 #     pertanyaan 'apakah tebing 128K masih ada setelah pindah ke q8_0' tidak
 #     bisa dijawab. Bila terbukti masih ada, turunkan ke 74% (127.303 token).
 if grep -qE '^[[:space:]]*auto_compact_threshold_percent' "$TMP"; then
-  sed -i -E 's/^([[:space:]]*auto_compact_threshold_percent[[:space:]]*=[[:space:]]*).*/\180/' "$TMP"
+  sed -i -E 's/^([[:space:]]*auto_compact_threshold_percent[[:space:]]*=[[:space:]]*).*/\188/' "$TMP"
 else
   # WAJIB di bawah [session] — di [models] tidak akan dibaca Grok
   if grep -qE '^\[session\]' "$TMP"; then
-    sed -i '0,/^\[session\]/s//[session]\nauto_compact_threshold_percent = 80/' "$TMP"
+    sed -i '0,/^\[session\]/s//[session]\nauto_compact_threshold_percent = 88/' "$TMP"
   else
-    printf '\n[session]\nauto_compact_threshold_percent = 80\n' >> "$TMP"
+    printf '\n[session]\nauto_compact_threshold_percent = 88\n' >> "$TMP"
   fi
 fi
 # 3c. memory native Grok. DEFAULT false -> harus dinyalakan eksplisit.

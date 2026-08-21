@@ -9,17 +9,20 @@
 ## 0. Parameter Operasional (WAJIB sinkron dengan server)
 
 > **Revisi 2026-08-21 (fase 1)** — `n_ctx` **172.032** (3 slot × 168K), ambang
-> handover **80% = 137.626 token**.
+> handover **88% = 151.388 token**.
 >
-> Riwayat: ambang 88% pada `n_ctx` 172.032 dulu memicu compaction di 151K, dan
-> pada konfigurasi 4-slot lama TPS per user runtuh ke 3,9 — meringkas 4.000 token
-> di sana memakan ~17 menit. Itu akar "compaction failed", bukan aritmetika
-> `max_tokens` semata. Konfigurasi 3-slot + KV q8_0 sekarang memprediksi ~5 menit.
+> Ambang dipilih dari pengukuran, bukan angka bulat. Pertumbuhan context per
+> giliran (695 request): median 287, p75 986, **p90 6.421**, p95 17.015 token.
+> Margin 88% = 8.356 token menampung 91,5% giliran. Ambang 91% hanya menyisakan
+> 3.195 — di bawah p90 — dan **truncation sudah terjadi 2x hari ini** pada
+> `n_tokens = 172031`, bukan risiko teoretis.
 >
-> Ambang 137.626 **sengaja** berada di atas 128.000 pada fase ini: tanpa sampel
-> context 128-160K, pertanyaan apakah tebing kinerja masih ada setelah pindah ke
-> KV q8_0 tidak dapat dijawab. Bila `scripts/concurrency_stats.sh` membuktikan
-> tebingnya masih ada, turunkan ambang ke **74%** (127.303 token).
+> Menaikkan ambang tidak mempercepat compaction: biayanya didominasi generasi
+> (~3.463 token terukur dari checkpoint nyata), bukan prefill. Ambang 80% dan 91%
+> sama-sama menghasilkan compaction ~1,4 menit.
+>
+> Riwayat: pada konfigurasi 4-slot lama TPS per user runtuh ke 3,9, sehingga
+> ringkasan 3.463 token memakan ~15 menit. Itu akar "compaction failed".
 >
 > Lihat `docs/plans/long_task_horizon.md`.
 
@@ -28,16 +31,20 @@
 | `n_ctx_slot` server | **172.032** (3 slot × 168K) | — |
 | `context_window` klien | **172.032** | Klien mengira punya lebih dari yang ada → overflow diam-diam |
 | `max_tokens` klien | **12.288** | 🔴 Server memuat `prompt + max_tokens` dalam satu slot. `max_tokens` besar memangkas plafon prompt satu-lawan-satu dan **menyebabkan compaction failed** |
-| Ambang handover | **80%** = 137.626 token | Di atas ini, compaction masuk zona lambat |
-| Sisa untuk output saat handover | 34.406 token | Cukup untuk `max_tokens` 12.288 + margin 180% |
+| Ambang handover | **88%** = 151.388 token | Di atas ini, compaction masuk zona lambat |
+| Sisa untuk output saat handover | 20.644 token | `max_tokens` 12.288 + margin 8.356 |
 | Plafon keras "jangan lewat" | **sedang diukur** | Fase 1 menguji apakah tebing 128.000 masih ada dengan KV q8_0 |
 
 **Aritmetika yang harus selalu dipenuhi:**
 ```
 ambang(%) × n_ctx_slot  +  max_tokens  ≤  n_ctx_slot
 
-80% × 172.032 + 12.288 = 149.914  ≤  172.032   ✔ margin 22.118
-74% × 172.032 + 12.288 = 139.591  ≤  172.032   ✔ margin 32.441  ← cadangan bila tebing terbukti
+88% × 172.032 + 12.288 = 163.676  ≤  172.032   ✔ margin  8.356
+85% × 172.032 + 12.288 = 158.515  ≤  172.032   ✔ margin 13.517  ← cadangan bila truncation muncul
+
+Margin harus menampung pertumbuhan satu giliran. Terukur dari 695 request:
+median 287, p75 986, p90 6.421, p95 17.015 token. Margin 8.356 menampung 91,5%
+giliran; 14,7% giliran menambah >3.000 token, jadi marginnya tidak berlebihan.
 ```
 Melanggar ini menghasilkan HTTP 500 saat compaction, bukan degradasi halus.
 
@@ -115,18 +122,18 @@ Bypass hanya untuk keadaan darurat: `git commit --no-verify` (dan wajib dijelask
 
 ---
 
-## 4. Protokol Handover 80%
+## 4. Protokol Handover 88%
 
-Ketika context mencapai **80%** (137.626 token) atau developer meminta ringkasan:
+Ketika context mencapai **88%** (151.388 token) atau developer meminta ringkasan:
 
-1. Agent **DILARANG** memicu auto-compaction teks mentah. Pada ambang lama (151K) jedanya ~4,5 menit; pada 80% (105K) server masih di rezim 16-40 TPS sehingga compaction 10-25x lebih cepat.
+1. Auto-compaction adalah jaring pengaman, bukan jalur utama. Durasinya kini ~1,4 menit, tetapi ia terpicu oleh ambang alih-alih batas tugas sehingga meringkas keadaan setengah jadi apa pun yang tertangkap.
 2. Agent **WAJIB** menjalankan *pre-compaction cleanup* (§5) lebih dulu.
 3. Agent **WAJIB** memperbarui `sessions/<dev-id>.md` dan `session_state.md` hingga 100% mutakhir.
 4. Agent **WAJIB** mengeluarkan Handover Card:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ ⚠️  CooperxMemory: Context 80% (137.626 / 172.032)                           │
+│ ⚠️  CooperxMemory: Context 88% (151.388 / 172.032)                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ Progres tersimpan di `.agents/memory/sessions/<dev-id>.md`                   │
 │                                                                             │
@@ -182,7 +189,7 @@ Jujur soal apa yang **belum** terpecahkan:
 
 - Ekstraksi lintas-sesi masih heuristik. Riset 2026: *"identifying what from session N should persist to session N+1 remains heuristic"* — belum ada solusi matang di industri.
 - Lapis 1 dan 2 tetap bergantung pada kepatuhan model. Hanya Lapis 3 yang mekanis, dan itu hanya menggigit saat commit.
-- Task yang butuh working context >137.626 token harus dipecah lewat rantai sesi (§9), bukan dipaksakan dalam satu context.
+- Task yang butuh working context >151.388 token harus dipecah lewat rantai sesi (§9), bukan dipaksakan dalam satu context.
 
 ---
 
@@ -197,7 +204,7 @@ Kita adaptasi: setiap sesi punya header di `sessions/<dev-id>.md`.
 ```markdown
 ## Sesi 2026-08-21-b
 Induk      : 2026-08-21-a
-Alasan     : ambang 80%          # 80%-threshold | task-boundary | manual | crash
+Alasan     : ambang 88%          # 88%-threshold | task-boundary | manual | crash
 Task aktif : Deploy config parallel 3
 ```
 
@@ -205,7 +212,7 @@ Aturan:
 
 1. **Rantai tidak boleh putus.** Sesi baru yang melanjutkan pekerjaan WAJIB mengisi
    `Induk`. Sesi yang benar-benar baru mengisi `Induk: (tidak ada)`.
-2. **Alasan wajib eksplisit.** `task-boundary` adalah yang sehat; `80%-threshold`
+2. **Alasan wajib eksplisit.** `task-boundary` adalah yang sehat; `88%-threshold`
    yang sering muncul menandakan disiplin §10 gagal.
 3. **Rehydration hanya membaca sesi terakhir**, bukan seluruh rantai. Rantai
    ditelusuri hanya saat menjawab "kenapa dulu diputuskan begini".
@@ -219,7 +226,7 @@ Aturan:
 > you choose gives the summarizer a clean story to compress, instead of whatever
 > mid-task state the threshold happens to catch."
 
-Ambang 80% adalah **jaring pengaman**, bukan jadwal. Agent WAJIB menawarkan
+Ambang 88% adalah **jaring pengaman**, bukan jadwal. Agent WAJIB menawarkan
 handover pada setiap batas tugas alami, berapa pun context saat itu:
 
 * Sebuah milestone/ToDo berpindah ke `[x]`
@@ -232,7 +239,7 @@ tengah investigasi menghasilkan ringkasan tentang keadaan setengah jadi, dan ses
 berikutnya mewarisi kebingungan itu.
 
 Metrik kesehatan harness: **proporsi handover dengan alasan `task-boundary`.**
-Bila `80%-threshold` mendominasi, harness gagal meski tidak pernah error.
+Bila `88%-threshold` mendominasi, harness gagal meski tidak pernah error.
 
 ---
 

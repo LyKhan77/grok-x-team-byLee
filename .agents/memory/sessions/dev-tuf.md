@@ -503,3 +503,34 @@ atau [[hooks.<Event>]] di config.toml. TIDAK ada event ambang context.
 - /home/gspe-ai1/project/gspexgrok-agent/.grok/skills/long-task/SKILL.md
 - /home/gspe-ai1/project/gspexgrok-agent/docs/plans/cooperagent_master_plan.md
 - /home/gspe-ai1/project/gspexgrok-agent/docs/plans/long_task_horizon.md
+
+### Ambang compaction 88%, dan auto-compact tidak dapat dinonaktifkan (2026-08-21)
+
+Ambang diset 88% (151.388 token, margin 8.356). Dasarnya pengukuran pertumbuhan
+context per giliran dari 695 request: median 287, p75 986, p90 6.421, p95 17.015.
+Margin 88% menampung 91,5% giliran; 91% hanya 85,5% (margin 3.195, DI BAWAH p90).
+
+TRUNCATION SUDAH TERJADI 2x hari ini pada n_tokens = 172031 (task 13546, 13595),
+jadi overflow bukan risiko teoretis. Truncation memotong isi diam-diam —
+lebih buruk daripada compaction yang meringkas.
+
+Menaikkan ambang TIDAK mempercepat compaction: biaya didominasi generasi
+(~3.463 token), bukan prefill. 80% dan 91% sama-sama ~1,4 menit.
+
+AUTO-COMPACT TIDAK DAPAT DINONAKTIFKAN secara resmi: tidak ada kunci boolean,
+env var, maupun flag CLI. Hanya `auto_compact_threshold_percent` (rentang 0-100).
+Nilai 100 secara teori tidak pernah memicu, tetapi TIDAK TERDOKUMENTASI dan
+konsekuensinya adalah truncation (yang sudah terbukti terjadi), bukan compaction.
+Tidak dipakai.
+
+KOREKSI: `/clear` TERNYATA ADA di Grok (user menguji langsung, perilakunya sama
+dengan /new). Tabel slash command di README tidak lengkap. Perubahan ke /new
+tetap dipertahankan karena itu yang terdokumentasi.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/config.default.toml
+- /home/gspe-ai1/project/gspexgrok-agent/setup.sh
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
+- /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
+- /home/gspe-ai1/project/gspexgrok-agent/.agents/rules/05-cooperx-memory.md
+- /home/gspe-ai1/project/gspexgrok-agent/docs/harness_scope.md

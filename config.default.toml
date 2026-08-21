@@ -8,12 +8,12 @@ auto_update = false
 telemetry = false
 
 [session]
-# Compaction NATIVE Grok sebagai jaring pengaman. 80% x 172.032 = 137.626 token;
-# +max_tokens 12.288 = 149.914, di bawah plafon slot 172.032.
+# Compaction NATIVE Grok sebagai jaring pengaman. 88% x 172.032 = 151.388 token;
+# +max_tokens 12.288 = 163.676, di bawah plafon slot 172.032.
 # CATATAN FASE 1: 137.626 sengaja di ATAS 128.000 agar sampel context 128-160K
 # muncul dan tebing kinerja bisa diukur. Bila terbukti runtuh, turunkan ke 74%.
 # Jalur utama tetap handover di batas tugas (lihat AGENTS.md §Protokol Sesi).
-auto_compact_threshold_percent = 80
+auto_compact_threshold_percent = 88
 load_envrc = true
 
 [models]
