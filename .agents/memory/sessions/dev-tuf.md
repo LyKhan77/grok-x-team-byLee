@@ -623,3 +623,21 @@ aman karena klien 131.072 dengan server 172.032 hanya kurang memanfaatkan.
 - /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
 - /home/gspe-ai1/project/gspexgrok-agent/.agents/rules/05-cooperx-memory.md
 - /home/gspe-ai1/project/gspexgrok-agent/docs/harness_scope.md
+
+### KEPUTUSAN: fix di 131K, 3 slot, ambang 85% (2026-08-21 17:36)
+
+Ditetapkan setelah membandingkan tiga opsi dengan data:
+  131K x 3 : compaction 3,7 mnt, 1,4% jendela gagal   <- DIPILIH (terukur)
+  158K x 3 : 5,7 mnt, 22,2% gagal                     <- interpolasi, ditolak
+  172K x 2 : 2,4 mnt, 0,0% gagal, agregat sama        <- ditolak: hanya 2 dev serentak
+  172K x 3 : 6,6 mnt, 29,2% gagal                     <- keadaan sebelum rollback
+
+Pola kunci: 2 slot KEBAL terhadap ukuran context (0% gagal di 131K maupun 168K);
+3 slot RAPUH (1,4% -> 29,2%). Mencari ctx aman di antara 131K dan 168K berarti
+meraba tepi tebing yang mekanismenya belum dipahami.
+
+run-qwen.sh sudah dikembalikan (backup .bak.20260821-173632), MENUNGGU restart.
+Config klien mesin server sudah 85% / 131.072.
+
+## Files Modified
+- /home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh (rollback ke 393216 / 131072)
