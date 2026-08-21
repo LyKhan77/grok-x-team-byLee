@@ -133,3 +133,30 @@ server belum restart sejak pemasangan. Uji nyata pertama = restart berikutnya.
 
 ## Files Modified
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/llamacpp-safe-restart.sh
+
+### Koreksi: Grok CLI tidak membaca n_ctx_train dari server
+
+Grok CLI TIDAK pernah memanggil `/props` (tidak ada rujukan di repo). Ia membaca
+`context_window` dari `~/.grok/config.toml` di masing-masing mesin. Tampilan 172K
+di terminal server berasal dari commit b8eccdd yang memperbarui file lokal mesin
+itu — bukan dari `--override-kv`. Override-kv tetap benar untuk klien yang memang
+bertanya ke server, tapi bukan pengungkit untuk kasus Grok CLI.
+
+Konsekuensi: mesin dev lain masih `context_window = 262144` DAN
+`max_tokens = 65536` — yang terakhir adalah akar compaction failed, jadi masalahnya
+bukan sekadar angka tampilan. Commit b8eccdd hanya ada di branch fitur yang belum
+di-push, sehingga dev tidak bisa pull. Solusi tanpa push: scripts/grok_client_patch.sh
+
+### n-max 7: aturan putusan pra-daftar GAGAL, hasil terkonfound
+
+n-max 7: 94 req, mean_len 3.81, acceptance 0.401, TPS med 30.3, p90 37.5
+n-max 6: 39 req, mean_len 4.07, acceptance 0.512, TPS med 27.3, p90 34.8
+
+mean_len = acceptance x n_max + 1 (terverifikasi pada kedua baris). n-max 7
+menerima LEBIH SEDIKIT token per pass -> metrik drafter memburuk 6,4%.
+TPS naik, tapi kedua pengukuran beban kerjanya berbeda (94 vs 39 req, waktu dan
+mix tugas berbeda), jadi kenaikan TPS tidak bisa diatribusikan ke n-max 7.
+Aturan pra-daftar (pertahankan bila mean_len >= 4.27) tidak terpenuhi.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh (baru)
