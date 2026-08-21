@@ -172,6 +172,34 @@ Ambang 85% adalah jaring pengaman, bukan jadwal.
 Meringkas di tengah investigasi menghasilkan ringkasan tentang keadaan setengah
 jadi, dan sesi berikutnya mewarisi kebingungan itu.
 
+### 2b. Batasi keluaran tool — pengungkit token terbesar
+
+Terukur di repo ini: **20 giliran (3,3%) menyumbang 72,1%** dari seluruh beban
+prefill. Median giliran hanya 278 token, rata-ratanya 4.762 — jurang 17x itu
+seluruhnya berasal dari segelintir keluaran tool raksasa.
+
+Membatasi keluaran tool pada 2.000 token memangkas **86,5% pertumbuhan context**
+dan hanya menyentuh 17,4% giliran. Efeknya: sesi bertahan **~173 giliran**
+alih-alih ~23 sebelum menyentuh ambang.
+
+| Tool | Jangan | Lakukan |
+| :--- | :--- | :--- |
+| shell | seluruh stdout | `\| tail -50`, `\| head -50`, atau `> /tmp/x.log` lalu grep |
+| git diff | diff penuh repo | `--stat` dulu, baru path yang relevan |
+| test | seluruh log | exit code, jumlah lulus/gagal, nama yang gagal, kutipan error |
+| baca berkas | `cat` berkas besar | rentang baris atau simbol yang dituju |
+| search | semua hasil | batasi jumlah, ekstensi, dan direktori |
+| log | `cat app.log` | `grep -c`, lalu 20 baris di sekitar yang dicari |
+
+Sebelum menjalankan perintah yang keluarannya tidak terduga, **perkirakan dulu**.
+Bila mungkin >2.000 token, arahkan ke berkas lalu baca ringkasannya. Keluaran
+mentah yang besar sebaiknya disimpan sebagai artifact dan dirujuk lewat path,
+bukan ditempelkan ke percakapan.
+
+Catatan: keluaran shell adalah yang paling boros — 2,77 char/token dibanding
+3,64 untuk kode. Satu layar log memakan token lebih banyak daripada kode dengan
+panjang karakter yang sama.
+
 ### 3. Task yang melewati satu context — rencana, bukan ingatan
 
 Untuk pekerjaan yang tidak selesai dalam satu sesi, **rencana hidup di berkas**:

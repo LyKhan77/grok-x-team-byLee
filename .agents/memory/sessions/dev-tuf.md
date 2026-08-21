@@ -641,3 +641,30 @@ Config klien mesin server sudah 85% / 131.072.
 
 ## Files Modified
 - /home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh (rollback ke 393216 / 131072)
+
+### Sumber pemborosan token teridentifikasi (2026-08-21)
+
+Tokenizer BUKAN masalahnya: vocab 248.320 entri, 3,64 char/token untuk kode TS,
+3,56 untuk markdown. Setara model komersial dan tidak dapat diubah tanpa ganti
+model. Keluaran shell paling boros: 2,77 char/token.
+
+Distribusi prefill (602 giliran, 2.866.568 token):
+  20 giliran terbesar (3,3%) = 72,1% seluruh prefill
+  50 giliran terbesar (8,3%) = 85,9%
+  median giliran 278 token, RATA-RATA 4.762 -> jurang 17x
+
+Simulasi pembatasan keluaran tool:
+  batas 20.000 token -> hemat 58,2%, menyentuh  3,0% giliran
+  batas  5.000 token -> hemat 77,9%, menyentuh 10,8% giliran
+  batas  2.000 token -> hemat 86,5%, menyentuh 17,4% giliran
+
+Dampak ke umur sesi: rata-rata 4.762 -> 645 token/giliran, sehingga sesi
+bertahan ~173 giliran alih-alih ~23 sebelum menyentuh ambang 85%. Ini membuat
+seluruh kekhawatiran compaction jadi hampir tidak relevan.
+
+Caveman DITOLAK: proxy-nya memampatkan input sehingga membatalkan prefix cache
+(prefill median kita hanya 238 token justru karena cache bekerja); skill-nya
+menyasar sisi output yang hanya 194.689 dari 1.212.577 token.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
