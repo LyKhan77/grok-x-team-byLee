@@ -102,3 +102,87 @@ Urutan: satu variabel per langkah, kriteria putusan ditetapkan sebelum mengukur.
   terkontrol di server ini.
 - Klaim "q4_0 KV lebih lambat dari q8_0 pada context panjang" berasal dari
   laporan pihak ketiga dan belum diukur di sini.
+
+---
+
+# Adendum — parallel 3, n-max 5, dan strategi memory
+
+## 7. Temuan yang mengubah rekomendasi
+
+**a. q5_1 tidak tersedia.** `build-vfix` dikompilasi dengan
+`GGML_CUDA_FA_ALL_QUANTS=OFF`, sehingga flash-attn hanya punya kombinasi
+`f16/f16`, `q4_0/q4_0`, `q8_0/q8_0`, `bf16/bf16`
+(`ggml/src/ggml-cuda/fattn.cu`, cabang `#else`). Pilihan KV nyata hanya q4_0
+atau q8_0 — kecuali rebuild.
+
+**b. Prompt cache mati, dan 2,2% request memakan 72% prefill.**
+Distribusi prefill per request: median **238** token, p90 3.003, maks 151.712.
+Reuse KV per slot bekerja sangat baik. Tetapi **8 request (2,2%) dengan prefill
+>20K menyumbang 876.340 dari 1.212.577 token (72,3%)** — itu sesi yang kehilangan
+slotnya dan harus prefill ulang dari nol. Satu kejadian 151K token = ~220 detik
+GPU, dan selama itu decode semua slot lain ikut tersendat.
+
+`--cache-ram 0` pada konfigurasi sekarang mematikan prompt cache, sehingga
+konteks yang tergusur hilang total. Log konfirmasi:
+`--cache-idle-slots requires --cache-ram, disabling`.
+
+**Kopling penting:** turun ke 3 slot dengan 4 developer membuat penggusuran slot
+LEBIH sering. Jadi `--cache-ram` wajib dinyalakan bersamaan, bukan opsional.
+RAM tersedia 43 GiB; satu konteks 131K q8_0 = 4,25 GiB, jadi 16 GiB cukup untuk
+menyimpan 3-4 sesi.
+
+## 8. Konfigurasi yang direkomendasikan
+
+```
+--parallel 3
+--ctx-size 393216            # 3 x 131.072
+--spec-draft-n-max 5
+--cache-type-k q8_0 --cache-type-v q8_0
+--cache-ram 16384            # dari 0
+```
+
+VRAM 58,8 GiB = **81,7%** (dalam band 80-84%).
+
+Mengapa 131.072 dan bukan 172.032: pada 3 slot, context >128K terukur **1,5 TPS**.
+Membatasi di 131K bukan mengorbankan kapasitas — melainkan membuang rezim yang
+memang tidak berfungsi. Anggaran yang dibebaskan dipakai menaikkan KV dari 4-bit
+ke 8-bit, tanpa menurunkan kualitas bobot sama sekali (tetap Q8_0).
+
+Alternatif konservatif bila 168K wajib dipertahankan:
+`par3 n5 Q8_0 q4_0 @172.032` = 54,9 GiB (76,3%). KV tetap 4-bit, dan 17,5%
+request tetap masuk rezim lambat.
+
+## 9. Auto-compact: akar lambatnya
+
+Aturan harness sekarang memicu handover di **88% = 151.388 token**. Itu tepat di
+dalam zona 1,5 TPS. **Compaction lambat karena dipicu justru di titik server
+paling lambat** — meringkas 151K token pada 1,5 TPS memakan waktu sangat lama dan
+berujung timeout. Inilah "compaction failed" yang dilaporkan.
+
+Ambang baru untuk n_ctx 131.072:
+
+```
+ambang x n_ctx + max_tokens <= n_ctx
+80% : 104.858 + 12.288 = 117.146  (margin 13.926)  <- direkomendasikan
+88% : 115.343 + 12.288 = 127.631  (margin  3.441)  terlalu mepet
+```
+
+Pada 105K dengan 3 slot aktif, server berada di rezim 16-40 TPS — compaction
+berjalan 10-25x lebih cepat daripada di 151K.
+
+Konsekuensi: `context_window` di config klien tiap dev harus turun 172.032 ->
+131.072, jika tidak Grok tetap menghitung ambang dari plafon yang salah.
+
+## 10. Strategi long-task
+
+Dengan plafon 131K, tugas panjang tidak lagi diselesaikan dalam satu context.
+Polanya bergeser ke checkpoint-and-resume, yang infrastrukturnya sudah ada:
+
+1. Checkpoint ditulis ke `.agents/memory/sessions/<dev-id>.md` **sebelum**
+   compaction, bukan sesudah (sudah diatur di rules, perlu ditegakkan).
+2. Anggaran context per sesi dibagi eksplisit, bukan dibiarkan tumbuh:
+   system+rules 4-8K | ringkasan sesi 4-12K | file aktif 16-48K |
+   percakapan kerja 16-64K. Total tetap di bawah 105K.
+3. Arsip lama tidak ikut dikirim; diambil kembali lewat file bila perlu.
+4. Sesi baru dimulai dengan membaca checkpoint, bukan dengan resume context lama —
+   resume memaksa prefill 100K+ yang jadi penyebab 72% beban prefill.

@@ -204,3 +204,23 @@ kesimpulan memo kuantisasi.
 
 ## Files Modified
 - /home/gspe-ai1/project/gspexgrok-agent/docs/plans/multistream_scaling.md (baru)
+
+### Adendum multi-stream: q5_1 mustahil, prompt cache mati (2026-08-21)
+
+q5_1 TIDAK tersedia: build-vfix pakai GGML_CUDA_FA_ALL_QUANTS=OFF, flash-attn
+hanya f16/f16, q4_0/q4_0, q8_0/q8_0, bf16/bf16. Pilihan KV nyata: q4_0 atau q8_0.
+
+Distribusi prefill: median 238 token (reuse KV bekerja baik), tapi 8 request
+(2,2%) dengan prefill >20K menyumbang 72,3% total prefill; maks 151.712 token.
+Penyebab: --cache-ram 0 mematikan prompt cache, sesi tergusur hilang total.
+Turun ke 3 slot memperbanyak penggusuran -> cache-ram wajib dinyalakan.
+RAM tersedia 43 GiB; 16 GiB cukup untuk 3-4 sesi.
+
+Rekomendasi final: par3, ctx-size 393216 (131.072/user), n-max 5, KV q8_0,
+cache-ram 16384 -> 81,7% VRAM. Bobot tetap Q8_0.
+
+Ambang handover harus turun 88% (151.388) -> 80% dari 131.072 (104.858).
+Compaction lambat KARENA dipicu di 151K, tepat di zona 1,5 TPS.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/docs/plans/multistream_scaling.md
