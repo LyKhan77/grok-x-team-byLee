@@ -598,3 +598,28 @@ Audit historis (scripts/compaction_audit.sh): 4 permintaan, hanya 1 berhasil
 
 ## Files Modified
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/compaction_audit.sh (baru)
+
+### Rollback 131K disiapkan; klien WAJIB ikut diperbarui (2026-08-21)
+
+Kalau klien tidak diperbarui, hasilnya LEBIH BURUK daripada sekarang: klien
+mengira n_ctx 172.032 lalu compact di 88% = 151.388, padahal slot server hanya
+131.072 -> TRUNCATION di 131.071 sebelum compaction pernah menyala.
+
+Ambang juga harus turun. Pada n_ctx 131.072:
+  88% -> margin 3.441  (DI BAWAH p90 6.421)  ✘
+  85% -> margin 7.373  ✔  <- dipakai
+  80% -> margin 13.927 ✔  cadangan
+Ambang maksimum agar margin >= p90 adalah 85,7%.
+
+Urutan eksekusi: server dulu (rollback + safe-restart), baru klien. Terbalik pun
+aman karena klien 131.072 dengan server 172.032 hanya kurang memanfaatkan.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
+- /home/gspe-ai1/project/gspexgrok-agent/config.default.toml
+- /home/gspe-ai1/project/gspexgrok-agent/setup.sh
+- /home/gspe-ai1/project/gspexgrok-agent/setup.ps1
+- /home/gspe-ai1/project/gspexgrok-agent/dashboard/src/app/api/telemetry/live/route.ts
+- /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
+- /home/gspe-ai1/project/gspexgrok-agent/.agents/rules/05-cooperx-memory.md
+- /home/gspe-ai1/project/gspexgrok-agent/docs/harness_scope.md

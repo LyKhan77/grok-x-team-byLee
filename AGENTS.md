@@ -17,8 +17,8 @@ Setiap subsistem dalam platform CooperAgent distandarisasi menggunakan kode seri
 
 | Kode Seri Modul | Deskripsi & Cakupan Teknis |
 | :--- | :--- |
-| **`CooperxCompute`** | Engine inferensi GPU pada 3x RTX 3090: **3 slot paralel, `--ctx-size 516096` (3 x 168K)**, KV-Cache `q8_0`, DFLASH 2 speculative decoding aktif (`--spec-draft-n-max 5`). Plafon 172.032 token per user. Batas praktisnya kinerja, bukan VRAM — lihat [`docs/plans/multistream_scaling.md`](docs/plans/multistream_scaling.md). |
-| **`CooperxMemory`** | Harness persistensi memori mandiri berbasis riset **Claude Code** & **Hermes Agent** (*Continuous State Checkpoint* $\rightarrow$ *88% Context Warning Handover Card* $\rightarrow$ *Instant 0-Token Rehydration*). |
+| **`CooperxCompute`** | Engine inferensi GPU pada 3x RTX 3090: **3 slot paralel, `--ctx-size 393216` (3 x 128K)**, KV-Cache `q8_0`, DFLASH 2 speculative decoding aktif (`--spec-draft-n-max 5`). Plafon 131.072 token per user. Batas praktisnya kinerja, bukan VRAM — lihat [`docs/plans/multistream_scaling.md`](docs/plans/multistream_scaling.md). |
+| **`CooperxMemory`** | Harness persistensi memori mandiri berbasis riset **Claude Code** & **Hermes Agent** (*Continuous State Checkpoint* $\rightarrow$ *85% Context Warning Handover Card* $\rightarrow$ *Instant 0-Token Rehydration*). |
 | **`CooperxHarness`** | Dukungan multi-agent fleksibel yang mengintegrasikan **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di [`setup.sh`](setup.sh) & [`setup.ps1`](setup.ps1). |
 | **`CooperxTelemetry`** | API Gateway (Port `8987`) dan SQLite Token Usage Leaderboard & Slot Visualizer Dashboard. |
 | **`CooperxStandard`** | Adaptive Project Standardization Wizard (`/standardization` & `scripts/standardize.py`). |
@@ -167,7 +167,7 @@ atau keputusan arsitektural diambil — lakukan **dua** hal, berapa pun context 
    agent tetap mengingat intinya. Sifatnya lokal per mesin.
 2. Perbarui `sessions/<dev-id>.md` — state yang terbagi ke tim lewat git.
 
-Ambang 88% adalah jaring pengaman, bukan jadwal.
+Ambang 85% adalah jaring pengaman, bukan jadwal.
 
 Meringkas di tengah investigasi menghasilkan ringkasan tentang keadaan setengah
 jadi, dan sesi berikutnya mewarisi kebingungan itu.
@@ -199,12 +199,12 @@ pengetahuannya tersimpan, tetapi ruangnya tetap habis.
 Pemicunya **batas tugas, bukan persentase.** Pemicu berbasis persentase selalu
 menangkap keadaan setengah jadi; batas tugas menghasilkan checkpoint bersih.
 
-### 4. Ambang 88% (151.388 token) — jaring pengaman
+### 4. Ambang 85% (111.411 token) — jaring pengaman
 
 | | nilai |
 | :--- | ---: |
-| `n_ctx` per slot | 172.032 |
-| Ambang handover | 151.388 (88%) |
+| `n_ctx` per slot | 131.072 |
+| Ambang handover | 111.411 (85%) |
 | Plafon keras | sedang diukur (fase 1) |
 | `max_tokens` | 12.288 |
 
@@ -223,7 +223,7 @@ prefill server.
 
 ---
 
-2. **State-First & CooperxMemory Protocol:** Lihat §Protokol Sesi di bawah. Ringkasnya: **baca** memori di awal sesi, **tulis** checkpoint di tiap batas tugas, handover pada context **88%** (151.388 token).
+2. **State-First & CooperxMemory Protocol:** Lihat §Protokol Sesi di bawah. Ringkasnya: **baca** memori di awal sesi, **tulis** checkpoint di tiap batas tugas, handover pada context **85%** (111.411 token).
 3. **Conventional Commits:** Semua pesan commit wajib mengikuti format baku: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 4. **Zero-Secret Policy:** Dilarang keras menaruh API key, password, atau credential mentah di source code.
 5. **Folder Hygiene:**

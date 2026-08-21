@@ -96,8 +96,8 @@ auto_update = false
 telemetry = false
 
 [session]
-# Compaction NATIVE Grok sebagai jaring pengaman pada 88% (151.388 token).
-auto_compact_threshold_percent = 88
+# Compaction NATIVE Grok sebagai jaring pengaman pada 85% (111.411 token).
+auto_compact_threshold_percent = 85
 load_envrc = true
 
 # Memory native Grok — DEFAULT false. Ini yang membuat agent mengingat inti
@@ -119,10 +119,10 @@ max_output_tokens = 12288
 [model.internal-qwen]
 model = "${DEFAULT_MODEL_NAME}"
 base_url = "${SERVER_URL}"
-name = "CooperAgent Qwen 3.8 (27B Q8 - 168K Dedicated)"
-description = "Dedicated 168K Context Window via Port 8987 Gateway"
+name = "CooperAgent Qwen 3.8 (27B Q8 - 128K Dedicated)"
+description = "Dedicated 128K Context Window via Port 8987 Gateway"
 api_backend = "chat_completions"
-context_window = 172032
+context_window = 131072
 max_completion_tokens = 12288
 max_tokens = 12288
 max_output_tokens = 12288
@@ -159,8 +159,8 @@ if [ "$AGENT_CHOICE" == "2" ] || [ "$AGENT_CHOICE" == "3" ]; then
       "models": [
         {
           "id": "${DEFAULT_MODEL_NAME}",
-          "name": "CooperAgent Qwen 3.8 (27B Q8 - 168K)",
-          "contextWindow": 172032,
+          "name": "CooperAgent Qwen 3.8 (27B Q8 - 128K)",
+          "contextWindow": 131072,
           "maxTokens": 12288
         }
       ]
