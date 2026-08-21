@@ -53,8 +53,8 @@ echo "Config: $CFG"
 TMP=$(mktemp); trap 'rm -f "$TMP"' EXIT
 cp "$CFG" "$TMP"
 
-# 1. context window: 128K, selaras --ctx-size 393216 / 3 slot
-sed -i -E 's/^([[:space:]]*context_window[[:space:]]*=[[:space:]]*)[0-9]+/\1131072/' "$TMP"
+# 1. context window: 168K, selaras --ctx-size 516096 / 3 slot
+sed -i -E 's/^([[:space:]]*context_window[[:space:]]*=[[:space:]]*)[0-9]+/\1172032/' "$TMP"
 # 2. plafon output: 65536 membuat auto-compact mustahil terpicu (akar compaction failed)
 sed -i -E 's/^([[:space:]]*(max_tokens|max_output_tokens|max_completion_tokens)[[:space:]]*=[[:space:]]*)[0-9]+/\112288/' "$TMP"
 # 3. sampling: samakan PENUH dengan mode thinking resmi Qwen3.8 yang dipakai
@@ -69,8 +69,10 @@ sed -i -E 's/^([[:space:]]*min_p[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*repeat_penalty[[:space:]]*=[[:space:]]*).*/\11.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*presence_penalty[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*top_k[[:space:]]*=[[:space:]]*).*/\120/' "$TMP"
-# 3b. compaction native Grok: 80% x 131.072 = 104.858 token. Default Grok 85%
-#     memicu compaction mendekati plafon kinerja 128.000, di mana TPS runtuh.
+# 3b. compaction native Grok: 80% x 172.032 = 137.626 token. Default Grok 85%
+#     SENGAJA di atas 128.000 pada fase ini: tanpa sampel context 128-160K,
+#     pertanyaan 'apakah tebing 128K masih ada setelah pindah ke q8_0' tidak
+#     bisa dijawab. Bila terbukti masih ada, turunkan ke 74% (127.303 token).
 if grep -qE '^[[:space:]]*auto_compact_threshold_percent' "$TMP"; then
   sed -i -E 's/^([[:space:]]*auto_compact_threshold_percent[[:space:]]*=[[:space:]]*).*/\180/' "$TMP"
 else
@@ -95,8 +97,8 @@ else
   printf '\n[memory]\nenabled = true\n' >> "$TMP"
 fi
 
-# 4. label yang menyesatkan -> 128K
-sed -i -E 's/Monster Context Window/Context Window/g; s/[0-9]+K (Dedicated|Monster Context Window|Context Window)/128K \1/g' "$TMP"
+# 4. label yang menyesatkan -> 168K
+sed -i -E 's/Monster Context Window/Context Window/g; s/[0-9]+K (Dedicated|Monster Context Window|Context Window)/168K \1/g' "$TMP"
 
 echo "=== perubahan ==="
 if diff -u "$CFG" "$TMP"; then echo "(sudah selaras, tidak ada yang diubah)"; fi

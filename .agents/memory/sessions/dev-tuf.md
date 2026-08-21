@@ -405,3 +405,36 @@ Hanya reduksi output tool yang memperkecil frekuensi DAN durasi.
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
 - /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
 - /home/gspe-ai1/project/gspexgrok-agent/docs/harness_scope.md
+
+### Fase 1 disiapkan: ctx 168K + skrip pengukur tebing (2026-08-21)
+
+Pengukuran pasca-restart (3 slot, q8_0, n-max 5, ctx 131K), TPS/user:
+  <64K 21,1 | 64-96K 18,8 | 96-128K 15,7   agregat 63,4 / 56,4 / 47,2
+Tidak ada sampel di 128-160K maupun 4 slot — konsisten dengan config baru,
+sekaligus membuktikan tebing 128K TIDAK BISA diukur selama plafon 131K berlaku.
+
+Disiapkan (belum dieksekusi):
+- scripts/cooperx_apply_ctx168k.sh — ctx-size 393216->516096, override-kv->172032.
+  Punya cek konsistensi ctx-size == parallel x override-kv, cek rantai baris,
+  dry-run, rollback. Prediksi 59.597 MiB = 80,8% (base diperlakukan konstan;
+  prediksi sebelumnya meleset 6,4 poin ke arah aman).
+- scripts/concurrency_stats.sh — tabel TPS terhadap (slot aktif x band context),
+  plus verdict tebing dengan kriteria di muka: aman bila >=50% dari band 96-128K
+  DAN >=20 TPS absolut.
+
+Ambang 80% pada 172.032 = 137.626 token, SENGAJA di atas 128.000 agar sampel
+128-160K muncul. Bila tebing terbukti masih ada, turunkan ke 74% (127.303).
+
+Seluruh berkas onboarding + harness diselaraskan ke 168K/172.032.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/cooperx_apply_ctx168k.sh (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/concurrency_stats.sh (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
+- /home/gspe-ai1/project/gspexgrok-agent/config.default.toml
+- /home/gspe-ai1/project/gspexgrok-agent/setup.sh
+- /home/gspe-ai1/project/gspexgrok-agent/setup.ps1
+- /home/gspe-ai1/project/gspexgrok-agent/dashboard/src/app/api/telemetry/live/route.ts
+- /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
+- /home/gspe-ai1/project/gspexgrok-agent/.agents/rules/05-cooperx-memory.md
+- /home/gspe-ai1/project/gspexgrok-agent/docs/harness_scope.md

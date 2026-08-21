@@ -17,7 +17,7 @@ Setiap subsistem dalam platform CooperAgent distandarisasi menggunakan kode seri
 
 | Kode Seri Modul | Deskripsi & Cakupan Teknis |
 | :--- | :--- |
-| **`CooperxCompute`** | Engine inferensi GPU pada 3x RTX 3090: **3 slot paralel, `--ctx-size 393216` (3 x 128K)**, KV-Cache `q8_0`, DFLASH 2 speculative decoding aktif (`--spec-draft-n-max 5`). Plafon 131.072 token per user bukan batas VRAM melainkan batas kinerja: di atas ~128K throughput runtuh — lihat [`docs/plans/multistream_scaling.md`](docs/plans/multistream_scaling.md). |
+| **`CooperxCompute`** | Engine inferensi GPU pada 3x RTX 3090: **3 slot paralel, `--ctx-size 516096` (3 x 168K)**, KV-Cache `q8_0`, DFLASH 2 speculative decoding aktif (`--spec-draft-n-max 5`). Plafon 172.032 token per user. Batas praktisnya kinerja, bukan VRAM — lihat [`docs/plans/multistream_scaling.md`](docs/plans/multistream_scaling.md). |
 | **`CooperxMemory`** | Harness persistensi memori mandiri berbasis riset **Claude Code** & **Hermes Agent** (*Continuous State Checkpoint* $\rightarrow$ *80% Context Warning Handover Card* $\rightarrow$ *Instant 0-Token Rehydration*). |
 | **`CooperxHarness`** | Dukungan multi-agent fleksibel yang mengintegrasikan **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di [`setup.sh`](setup.sh) & [`setup.ps1`](setup.ps1). |
 | **`CooperxTelemetry`** | API Gateway (Port `8987`) dan SQLite Token Usage Leaderboard & Slot Visualizer Dashboard. |
@@ -171,13 +171,13 @@ Ambang 80% adalah jaring pengaman, bukan jadwal.
 Meringkas di tengah investigasi menghasilkan ringkasan tentang keadaan setengah
 jadi, dan sesi berikutnya mewarisi kebingungan itu.
 
-### 3. Ambang 80% (104.858 token) — handover, bukan auto-compact
+### 3. Ambang 80% (137.626 token) — handover, bukan auto-compact
 
 | | nilai |
 | :--- | ---: |
-| `n_ctx` per slot | 131.072 |
-| Ambang handover | 104.858 (80%) |
-| Plafon keras | 128.000 |
+| `n_ctx` per slot | 172.032 |
+| Ambang handover | 137.626 (80%) |
+| Plafon keras | sedang diukur (fase 1) |
 | `max_tokens` | 12.288 |
 
 Di atas ~128.000 token throughput runtuh ke ~1,5 TPS, sehingga compaction yang
@@ -190,7 +190,7 @@ prefill server.
 
 ---
 
-2. **State-First & CooperxMemory Protocol:** Lihat §Protokol Sesi di bawah. Ringkasnya: **baca** memori di awal sesi, **tulis** checkpoint di tiap batas tugas, handover pada context **80%** (104.858 token).
+2. **State-First & CooperxMemory Protocol:** Lihat §Protokol Sesi di bawah. Ringkasnya: **baca** memori di awal sesi, **tulis** checkpoint di tiap batas tugas, handover pada context **80%** (137.626 token).
 3. **Conventional Commits:** Semua pesan commit wajib mengikuti format baku: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 4. **Zero-Secret Policy:** Dilarang keras menaruh API key, password, atau credential mentah di source code.
 5. **Folder Hygiene:**

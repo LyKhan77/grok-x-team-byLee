@@ -142,10 +142,10 @@ if ($AGENT_CHOICE -eq "1" -or $AGENT_CHOICE -eq "3") {
         "[model.internal-qwen]",
         "model = '$DEFAULT_MODEL_NAME'",
         "base_url = '$SERVER_URL'",
-        "name = 'CooperAgent Qwen 3.8 (27B Q8 - 128K Dedicated)'",
-        "description = 'Dedicated 128K Context Window via Port 8987 Gateway'",
+        "name = 'CooperAgent Qwen 3.8 (27B Q8 - 168K Dedicated)'",
+        "description = 'Dedicated 168K Context Window via Port 8987 Gateway'",
         "api_backend = 'chat_completions'",
-        "context_window = 131072",
+        "context_window = 172032",
         "max_completion_tokens = 12288",
         "max_tokens = 12288",
         "max_output_tokens = 12288",
@@ -196,8 +196,8 @@ if ($AGENT_CHOICE -eq "2" -or $AGENT_CHOICE -eq "3") {
                 models = @(
                     [ordered]@{
                         id = $DEFAULT_MODEL_NAME
-                        name = "CooperAgent Qwen 3.8 (27B Q8 - 128K)"
-                        contextWindow = 131072
+                        name = "CooperAgent Qwen 3.8 (27B Q8 - 168K)"
+                        contextWindow = 172032
                         maxTokens = 12288
                     }
                 )

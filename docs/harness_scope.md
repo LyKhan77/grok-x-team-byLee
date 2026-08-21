@@ -92,15 +92,15 @@ auto_compact_threshold_percent = 80     # jaring pengaman NATIVE
 handover di batas tugas                 # jalur utama, kualitas ringkasan lebih baik
 ```
 
-Aritmetika untuk `context_window = 131.072`:
+Aritmetika untuk `context_window = 172.032`:
 
 ```
-80% = 104.858 token + max_tokens 12.288 = 117.146   <= plafon kinerja 128.000  ✔
-85% = 111.411 token + max_tokens 12.288 = 123.699   mepet ke plafon           ✘
+80% = 137.626 token + max_tokens 12.288 = 149.914   <= plafon slot 172.032   ✔
+74% = 127.303 token + max_tokens 12.288 = 139.591   cadangan bila tebing 128K terbukti
 ```
 
-80% dipilih bukan karena hemat token, melainkan karena compaction yang dipicu
-mendekati 128.000 masuk ke rezim ~1,5 TPS dan berujung timeout.
+Pada fase 1, 137.626 sengaja di atas 128.000 agar sampel context 128-160K muncul
+dan tebing kinerja dapat diukur oleh `scripts/concurrency_stats.sh`.
 
 ## Yang TIDAK kita bangun
 

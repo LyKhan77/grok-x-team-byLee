@@ -8,27 +8,36 @@
 
 ## 0. Parameter Operasional (WAJIB sinkron dengan server)
 
-> **Revisi 2026-08-21** — `n_ctx` turun 172.032 → **131.072**, ambang handover
-> 88% → **80%**. Alasannya bukan penghematan VRAM, melainkan pengukuran: pada 3
-> slot aktif, context di atas 128K jatuh ke **1,5 TPS**. Ambang lama 88% memicu
-> compaction tepat di zona itu — itulah sebab "compaction failed", bukan sekadar
-> aritmetika `max_tokens`. Lihat `docs/plans/multistream_scaling.md`.
+> **Revisi 2026-08-21 (fase 1)** — `n_ctx` **172.032** (3 slot × 168K), ambang
+> handover **80% = 137.626 token**.
+>
+> Riwayat: ambang 88% pada `n_ctx` 172.032 dulu memicu compaction di 151K, dan
+> pada konfigurasi 4-slot lama TPS per user runtuh ke 3,9 — meringkas 4.000 token
+> di sana memakan ~17 menit. Itu akar "compaction failed", bukan aritmetika
+> `max_tokens` semata. Konfigurasi 3-slot + KV q8_0 sekarang memprediksi ~5 menit.
+>
+> Ambang 137.626 **sengaja** berada di atas 128.000 pada fase ini: tanpa sampel
+> context 128-160K, pertanyaan apakah tebing kinerja masih ada setelah pindah ke
+> KV q8_0 tidak dapat dijawab. Bila `scripts/concurrency_stats.sh` membuktikan
+> tebingnya masih ada, turunkan ambang ke **74%** (127.303 token).
+>
+> Lihat `docs/plans/long_task_horizon.md`.
 
 | Parameter | Nilai | Konsekuensi bila salah |
 | :--- | :--- | :--- |
-| `n_ctx_slot` server | **131.072** (3 slot × 128K) | — |
-| `context_window` klien | **131.072** | Klien mengira punya lebih dari yang ada → overflow diam-diam |
+| `n_ctx_slot` server | **172.032** (3 slot × 168K) | — |
+| `context_window` klien | **172.032** | Klien mengira punya lebih dari yang ada → overflow diam-diam |
 | `max_tokens` klien | **12.288** | 🔴 Server memuat `prompt + max_tokens` dalam satu slot. `max_tokens` besar memangkas plafon prompt satu-lawan-satu dan **menyebabkan compaction failed** |
-| Ambang handover | **80%** = 104.858 token | Di atas ini, compaction masuk zona lambat |
-| Sisa untuk output saat handover | 26.214 token | Cukup untuk `max_tokens` 12.288 + margin 113% |
-| Plafon keras "jangan lewat" | **128.000 token** | Di atas ini TPS runtuh ke ~1,5 pada 3 slot |
+| Ambang handover | **80%** = 137.626 token | Di atas ini, compaction masuk zona lambat |
+| Sisa untuk output saat handover | 34.406 token | Cukup untuk `max_tokens` 12.288 + margin 180% |
+| Plafon keras "jangan lewat" | **sedang diukur** | Fase 1 menguji apakah tebing 128.000 masih ada dengan KV q8_0 |
 
 **Aritmetika yang harus selalu dipenuhi:**
 ```
 ambang(%) × n_ctx_slot  +  max_tokens  ≤  n_ctx_slot
 
-80% × 131.072 + 12.288 = 117.146  ≤  131.072   ✔ margin 13.926
-88% × 131.072 + 12.288 = 127.631  ≤  131.072   ✔ margin  3.441  ← terlalu mepet
+80% × 172.032 + 12.288 = 149.914  ≤  172.032   ✔ margin 22.118
+74% × 172.032 + 12.288 = 139.591  ≤  172.032   ✔ margin 32.441  ← cadangan bila tebing terbukti
 ```
 Melanggar ini menghasilkan HTTP 500 saat compaction, bukan degradasi halus.
 
@@ -108,7 +117,7 @@ Bypass hanya untuk keadaan darurat: `git commit --no-verify` (dan wajib dijelask
 
 ## 4. Protokol Handover 80%
 
-Ketika context mencapai **80%** (104.858 token) atau developer meminta ringkasan:
+Ketika context mencapai **80%** (137.626 token) atau developer meminta ringkasan:
 
 1. Agent **DILARANG** memicu auto-compaction teks mentah. Pada ambang lama (151K) jedanya ~4,5 menit; pada 80% (105K) server masih di rezim 16-40 TPS sehingga compaction 10-25x lebih cepat.
 2. Agent **WAJIB** menjalankan *pre-compaction cleanup* (§5) lebih dulu.
@@ -117,7 +126,7 @@ Ketika context mencapai **80%** (104.858 token) atau developer meminta ringkasan
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ ⚠️  CooperxMemory: Context 80% (104.858 / 131.072)                           │
+│ ⚠️  CooperxMemory: Context 80% (137.626 / 172.032)                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ Progres tersimpan di `.agents/memory/sessions/<dev-id>.md`                   │
 │                                                                             │
@@ -173,7 +182,7 @@ Jujur soal apa yang **belum** terpecahkan:
 
 - Ekstraksi lintas-sesi masih heuristik. Riset 2026: *"identifying what from session N should persist to session N+1 remains heuristic"* — belum ada solusi matang di industri.
 - Lapis 1 dan 2 tetap bergantung pada kepatuhan model. Hanya Lapis 3 yang mekanis, dan itu hanya menggigit saat commit.
-- Task yang butuh working context >104.858 token harus dipecah lewat rantai sesi (§9), bukan dipaksakan dalam satu context.
+- Task yang butuh working context >137.626 token harus dipecah lewat rantai sesi (§9), bukan dipaksakan dalam satu context.
 
 ---
 

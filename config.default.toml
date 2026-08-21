@@ -8,8 +8,10 @@ auto_update = false
 telemetry = false
 
 [session]
-# Compaction NATIVE Grok sebagai jaring pengaman. 80% x 131.072 = 104.858 token;
-# +max_tokens 12.288 = 117.146, aman di bawah plafon kinerja 128.000 token.
+# Compaction NATIVE Grok sebagai jaring pengaman. 80% x 172.032 = 137.626 token;
+# +max_tokens 12.288 = 149.914, di bawah plafon slot 172.032.
+# CATATAN FASE 1: 137.626 sengaja di ATAS 128.000 agar sampel context 128-160K
+# muncul dan tebing kinerja bisa diukur. Bila terbukti runtuh, turunkan ke 74%.
 # Jalur utama tetap handover di batas tugas (lihat AGENTS.md §Protokol Sesi).
 auto_compact_threshold_percent = 80
 load_envrc = true
@@ -32,7 +34,7 @@ base_url = "http://192.168.2.143:8987/api/v1"
 name = "CooperAgent Qwen 3.8 / 2.5 (27B Q8 - 256K Dedicated)"
 description = "Dedicated 256K Monster Context Window via Port 8987 Gateway"
 api_backend = "chat_completions"
-context_window = 131072
+context_window = 172032
 max_completion_tokens = 12288
 max_tokens = 12288
 max_output_tokens = 12288
@@ -49,7 +51,7 @@ model = "qwen35"
 base_url = "http://127.0.0.1:8987/api/v1"
 name = "Localhost CooperAgent (Direct Server Gateway)"
 api_backend = "chat_completions"
-context_window = 131072
+context_window = 172032
 max_completion_tokens = 12288
 max_tokens = 12288
 max_output_tokens = 12288
