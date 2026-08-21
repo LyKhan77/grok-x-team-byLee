@@ -32,29 +32,33 @@ fi
 echo -e "${GREEN}✔ Secret scan lolos.${NC}"
 
 # ==============================================================================
-# 2. CooperxMemory Gate (Lapis 3 penegakan, lihat .agents/rules/05-cooperx-memory.md)
-#    Menolak commit yang mengubah kode tanpa memperbarui memori sesi.
+# 2. Changelog Gate (Lapis 3 penegakan)
+#    Menolak commit yang mengubah kode tanpa mencatat apa yang berubah.
 #    Ini satu-satunya lapisan yang tidak bergantung pada kepatuhan model.
+#
+#    State per-sesi TIDAK lagi disimpan di repo: itu lokal per mesin
+#    (~/.grok/memory/ untuk Grok CLI). Yang wajib terbagi hanyalah catatan
+#    perubahan dan analisis — lihat docs/harness_scope.md.
 # ==============================================================================
 CODE_RE='\.(py|ts|tsx|js|jsx|rs|go|java|kt|c|cc|cpp|h|hpp|sh|ps1|sql|toml|yaml|yml)$'
-MEM_RE='^\.agents/memory/'
+MEM_RE='^(CHANGELOG\.md|docs/)'
 
 CODE_STAGED=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "$CODE_RE" | grep -vE '^(scripts/hooks/|test/results/)' || true)
 MEM_STAGED=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "$MEM_RE" || true)
 
 if [ -n "$CODE_STAGED" ] && [ -z "$MEM_STAGED" ]; then
     N=$(echo "$CODE_STAGED" | wc -l)
-    echo -e "${RED}✖ COMMIT DITOLAK:${NC} ${N} file kode di-stage, tetapi tidak ada file memori yang diperbarui."
-    echo -e "${YELLOW}CooperxMemory mewajibkan checkpoint setelah setiap ToDo/milestone selesai.${NC}"
+    echo -e "${RED}✖ COMMIT DITOLAK:${NC} ${N} file kode di-stage, tetapi CHANGELOG.md/docs/ tidak diperbarui."
+    echo -e "${YELLOW}Perubahan kode wajib disertai catatan apa yang berubah dan buktinya.${NC}"
     echo ""
     echo -e "  File kode yang di-stage:"
     echo "$CODE_STAGED" | sed 's/^/    - /' | head -10
     echo ""
     echo -e "  ${GREEN}Perbaiki dengan:${NC}"
-    echo -e "    1. Perbarui .agents/memory/sessions/<dev-id>.md"
-    echo -e "       Bagian wajib: Session Intent, Files Modified (path lengkap),"
-    echo -e "       Key Decisions, Milestone/ToDo, Active Task, Next Steps, Blockers"
-    echo -e "    2. git add .agents/memory/"
+    echo -e "    1. Tambahkan entri di CHANGELOG.md (skill /init-changelog)"
+    echo -e "       Wajib: Konteks, Perubahan (path lengkap), Bukti, Dampak, Rollback"
+    echo -e "       Untuk analisis panjang, tulis di docs/plans/ dan rujuk dari changelog"
+    echo -e "    2. git add CHANGELOG.md   (atau docs/)"
     echo -e "    3. commit ulang"
     echo ""
     echo -e "  ${YELLOW}Bypass darurat:${NC} git commit --no-verify  (wajib dijelaskan di pesan commit)"

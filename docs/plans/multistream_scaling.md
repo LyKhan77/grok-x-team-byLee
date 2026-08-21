@@ -178,8 +178,8 @@ Konsekuensi: `context_window` di config klien tiap dev harus turun 172.032 ->
 Dengan plafon 131K, tugas panjang tidak lagi diselesaikan dalam satu context.
 Polanya bergeser ke checkpoint-and-resume, yang infrastrukturnya sudah ada:
 
-1. Checkpoint ditulis ke `.agents/memory/sessions/<dev-id>.md` **sebelum**
-   compaction, bukan sesudah (sudah diatur di rules, perlu ditegakkan).
+1. Rencana dan buktinya ditulis ke `docs/plans/<slug>.md` **sebelum** compaction.
+   State sesi pribadi ditangani memory native Grok (`/flush`), bukan berkas repo.
 2. Anggaran context per sesi dibagi eksplisit, bukan dibiarkan tumbuh:
    system+rules 4-8K | ringkasan sesi 4-12K | file aktif 16-48K |
    percakapan kerja 16-64K. Total tetap di bawah 105K.

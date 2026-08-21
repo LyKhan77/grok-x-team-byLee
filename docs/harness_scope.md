@@ -50,8 +50,6 @@ AGENTS.md                      instruksi kerja agent — DIBACA OTOMATIS oleh Gr
 CHANGELOG.md                   catatan checkpoint tiap perubahan + bukti
 docs/plans/                    analisis panjang dan alasan keputusan
 .grok/skills/                  slash command proyek — DIBACA OTOMATIS oleh Grok
-.agents/memory/session_state.md    ledger proyek bersama
-.agents/memory/sessions/<dev-id>.md  state tugas per developer, terlihat tim
 .agents/rules/                 aturan rinci (TIDAK dibaca otomatis, dirujuk AGENTS.md)
 ```
 

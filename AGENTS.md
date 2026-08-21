@@ -84,21 +84,13 @@ gspexgrok-agent/
     │   ├── 02-git-workflow.md           # Konvensi git commit
     │   ├── 03-testing-guidelines.md     # Panduan testing
     │   ├── 04-security-privacy.md       # Guardrail keamanan
-    │   └── 05-cooperx-memory.md         # Standar persistensi memori CooperxMemory
-    ├── memory/                          # Direktori ledger memori kerja
-    │   ├── session_state.md             # Ledger proyek BERSAMA (semua developer)
-    │   ├── session_state.template.md    # Template ledger
-    │   └── sessions/                    # Namespace PER developer
-    │       ├── _template.md             # Salin ini saat sesi pertama
-    │       ├── <dev-id>.md              # Checkpoint milik satu developer
-    │       └── archive/                 # Sesi lama yang sudah diarsipkan
-    └── rules/                       # (lanjutan) — TIDAK dibaca otomatis
+    │   └── 05-context-discipline.md     # Ambang context, hemat token, handover
+    └── rules/                           # Aturan rinci — TIDAK dibaca otomatis
 
 ├── .grok/skills/                        # 🔌 Slash command — DIBACA OTOMATIS oleh Grok
 │   ├── init-agent/SKILL.md              # /init-agent      — susun AGENTS.md dari repo
 │   ├── init-changelog/SKILL.md          # /init-changelog  — catatan checkpoint perubahan
 │   ├── long-task/SKILL.md               # /long-task       — kerja lintas sesi berbasis rencana
-│   ├── checkpoint/SKILL.md              # /checkpoint      — simpan state sesi
 │   └── standardization/SKILL.md         # /standardization — kuesioner standar proyek
 ```
 
@@ -110,7 +102,7 @@ gspexgrok-agent/
 | :--- | :--- | :--- |
 | `./setup.sh` | Onboarding 1-Click untuk Linux & macOS (Pilihan Grok & Pi) | [setup.sh](setup.sh) |
 | `.\setup.ps1` | Onboarding 1-Click untuk Windows PowerShell | [setup.ps1](setup.ps1) |
-| `sudo systemctl restart llamacpp.service` | Menjalankan/restart CooperxCompute di host GPU. Config nyata ada di `/home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh`, **bukan** `server-optimize.sh`. | [session_state.md](.agents/memory/session_state.md) |
+| `sudo systemctl restart llamacpp.service` | Menjalankan/restart CooperxCompute di host GPU. Config nyata ada di `/home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh`, **bukan** `server-optimize.sh`. | [docs/plans/](docs/plans/) |
 | `./test/run_stress_test.sh` | Menjalankan stress test & benchmark multi-stream | [test/run_stress_test.sh](test/run_stress_test.sh) |
 | `python3 scripts/standardize.py` | Menjalankan wizard standarisasi adaptif (CooperxStandard) | [scripts/standardize.py](scripts/standardize.py) |
 | `/standardization` | Slash command interaktif di chat agent | [.agents/skills/standardization/SKILL.md](.agents/skills/standardization/SKILL.md) |
@@ -140,22 +132,24 @@ Rincian: [`docs/harness_scope.md`](docs/harness_scope.md).
 ## Protokol Sesi (WAJIB — ini satu-satunya berkas yang dibaca otomatis)
 
 Berkas ini ditempelkan ke system prompt setiap sesi. Aturan lengkap ada di
-`.agents/rules/05-cooperx-memory.md`, tetapi berkas itu **tidak** dibaca otomatis —
+`.agents/rules/05-context-discipline.md`, tetapi berkas itu **tidak** dibaca otomatis —
 jadi tiga hal berikut harus dijalankan tanpa menunggu diminta.
 
 ### 1. Awal sesi — BACA dulu, jangan langsung bekerja
 
-Sebelum menjawab permintaan pertama, baca berurutan:
+State sesi pribadi ditangani Grok sendiri: memory-nya dicari **otomatis pada
+giliran pertama**, jadi tidak ada berkas yang perlu dibaca manual untuk itu.
+
+Yang WAJIB dibaca dari repo adalah yang terbagi:
 
 ```
-.agents/memory/sessions/<dev-id>.md     # checkpoint developer ini
-.agents/memory/session_state.md         # ledger proyek bersama
+docs/plans/<slug>.md    # bila melanjutkan task panjang — rencana + posisi
+CHANGELOG.md            # apa yang berubah terakhir, beserta buktinya
 ```
 
-Lalu konfirmasi dalam 3 baris: **Active Task**, **Next Steps**, **Blockers**.
-Konfirmasi ini wajib — tanpanya, melanjutkan dari state basi tidak akan ketahuan.
-
-Bila `sessions/<dev-id>.md` belum ada, salin `sessions/_template.md`.
+Lalu konfirmasi dalam 3 baris: **posisi sekarang**, **langkah berikutnya**,
+**blocker**. Konfirmasi ini wajib — tanpanya, melanjutkan dari state basi tidak
+akan ketahuan.
 
 ### 2. Selama sesi — tulis checkpoint di batas tugas
 
@@ -165,7 +159,8 @@ atau keputusan arsitektural diambil — lakukan **dua** hal, berapa pun context 
 1. `/flush` — menulis ringkasan sesi ke memory Grok. Ringkasan ini dicari
    **otomatis pada giliran pertama sesi berikutnya**, sehingga setelah `/new`
    agent tetap mengingat intinya. Sifatnya lokal per mesin.
-2. Perbarui `sessions/<dev-id>.md` — state yang terbagi ke tim lewat git.
+2. Perbarui `CHANGELOG.md` (dan `docs/plans/<slug>.md` bila sedang mengerjakan
+   task panjang) — inilah yang terbagi ke tim lewat git.
 
 Ambang 85% adalah jaring pengaman, bukan jadwal.
 

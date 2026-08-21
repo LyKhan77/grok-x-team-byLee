@@ -49,7 +49,7 @@ Jalankan urutan ini sebelum menyentuh kode apa pun:
 
 ```
 1. Baca docs/plans/<slug>.md          -> rencana + posisi
-2. Baca .agents/memory/sessions/<dev-id>.md  -> blocker + catatan pribadi
+2. Memory Grok otomatis terinjeksi giliran pertama -> konteks pribadi
 3. git status && git log --oneline -5 -> keadaan NYATA repo
 4. Jalankan perintah verifikasi langkah terakhir yang ditandai [x]
 ```

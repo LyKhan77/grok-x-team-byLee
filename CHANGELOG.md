@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-08-21 — Hapus memori sesi dari repo; pindahkan gerbang ke CHANGELOG
+
+**Konteks**  State per-sesi disimpan ganda: Grok CLI sudah menyimpannya di
+`~/.grok/memory/` dan `~/.grok/sessions/` lalu mencarinya otomatis pada giliran
+pertama, sementara repo menyimpan salinan kedua yang harus dirawat manual.
+
+**Perubahan**
+- `.agents/memory/` — dihapus seluruhnya (`session_state.md` 360 baris,
+  `sessions/dev-tuf.md` 670 baris, template, arsip). Keduanya sudah melewati
+  batas yang ditetapkan aturannya sendiri (250 dan 400 baris).
+- `.grok/skills/checkpoint/` — dihapus; pekerjaannya diambil `/init-changelog`.
+- `.agents/rules/05-cooperx-memory.md` → `05-context-discipline.md`; bagian yang
+  mengatur berkas memori repo dibuang, tersisa disiplin context (166 → 179 baris,
+  isinya berganti fokus).
+- `scripts/hooks/pre-commit` — gerbang beralih dari `^\.agents/memory/` ke
+  `^(CHANGELOG\.md|docs/)`.
+- `AGENTS.md`, `ARCHITECTURE.md`, `docs/harness_scope.md`,
+  `docs/plans/multistream_scaling.md`, `.grok/skills/long-task/SKILL.md` —
+  rujukan diperbarui.
+
+**Bukti**
+- Gerbang diuji: stage satu berkas `.sh` tanpa menyentuh CHANGELOG →
+  `✖ COMMIT DITOLAK: 1 file kode di-stage, tetapi CHANGELOG.md/docs/ tidak diperbarui.`
+- Pencarian rujukan tersisa bersih, kecuali satu entri historis di CHANGELOG
+  yang memang mencatat keadaan masa lalu dan tidak diubah.
+
+**Dampak**  Satu sumber kebenaran untuk state sesi (lokal, milik Grok) dan satu
+untuk pengetahuan terbagi (git). Yang hilang: catatan per-developer yang terlihat
+tim lewat git — kalau nanti dibutuhkan, tempatnya `docs/plans/<slug>.md`.
+
+**Rollback**  `git revert <commit>` mengembalikan berkas dan gerbang lama.
+
+
 ### 🔧 Koreksi Dokumentasi (2026-08-20)
 - **Koreksi klaim kapasitas context:** Entri sebelumnya menyatakan *"CooperxCompute 4 Slots x 256K Context = 1,048,576 Total Tokens"* sudah aktif. Verifikasi langsung ke mesin menunjukkan server live berjalan pada `--ctx-size 524288` (`n_ctx` 131.072/slot, yaitu **4 x 128K**). Konfigurasi 4 x 256K **belum pernah berhasil naik** — percobaan menaikkannya berakhir OOM. `AGENTS.md`, `README.md`, dan `ARCHITECTURE.md` telah dikoreksi.
 - **Koreksi baseline VRAM:** Angka 67.4 GB / 72 GB yang tercatat di plan tidak akurat; nilai terukur adalah **47.8 GB / 72 GB**.

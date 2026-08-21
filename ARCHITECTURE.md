@@ -76,7 +76,7 @@ Setiap fitur dan subsistem dalam platform CooperAgent memiliki kode seri standar
 | Modul | Nama Sistem | Deskripsi Teknis |
 | :--- | :--- | :--- |
 | **`CooperxCompute`** | Inference & Hardware Engine | 4 Slots paralel, live 4 x 128K (524.288 token); target 4 x 256K via DFLASH 2. Speculative Acceleration, KV-Cache `q4_0` pada 3x RTX 3090. |
-| **`CooperxMemory`** | Autonomous State & Handover | Checkpoint `.agents/memory/session_state.md`, 90% Context Warning Card, dan Instant 0-Token Rehydration. |
+| **`CooperxMemory`** | Disiplin Context & Handover | Ambang handover 85%, batasi keluaran tool, rencana bertahan di `docs/plans/`. State sesi pribadi ditangani memory native Grok (lokal per mesin). |
 | **`CooperxHarness`** | Multi-Agent Ecosystem | Dukungan native untuk **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di Linux, macOS, dan Windows. |
 | **`CooperxTelemetry`** | Telemetry Gateway & Dashboard | Next.js 14 API Gateway (Port `8987`), Developer Identity Tracker, dan Dark Mode TUI Dashboard. |
 | **`CooperxStandard`** | Adaptive Standardization | Wizard 5 pertanyaan interaktif (`/standardization`) untuk menyusun aturan repository secara adaptif. |
@@ -108,7 +108,7 @@ Terinspirasi dari arsitektur memori **Claude Code** (`CLAUDE.md` memory ledger) 
 │                 CooperxMemory HARNESS (HANDOVER & RECOVERY FLOW)            │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  1. CONTINUOUS CHECKPOINTING (.agents/memory/session_state.md)              │
+│  1. RENCANA BERTAHAN DI BERKAS (docs/plans/<slug>.md)                       │
 │     Setiap kali agent selesai membuat/mengedit file, agent meng-update:     │
 │     - Goal Utama Proyek                                                     │
 │     - File-file yang telah dibuat & status test                             │
@@ -119,16 +119,16 @@ Terinspirasi dari arsitektur memori **Claude Code** (`CLAUDE.md` memory ledger) 
 │     Ketika sesi mencapai ~230K tokens (90% dari 256K), agent menampilkan:  │
 │     ┌─────────────────────────────────────────────────────────────────┐     │
 │     │ ⚠️ CooperxMemory NOTICE: Context 90% reached                    │     │
-│     │ State kerja tersimpan aman di `.agents/memory/session_state.md`│     │
+│     │ Rencana + bukti tersimpan di `docs/plans/<slug>.md`            │     │
 │     │                                                                 │     │
 │     │ 💡 UNTUK MELANJUTKAN DENGAN CONTEXT BERSIH (0 TOKEN):           │     │
 │     │ 1. Ketik `/new` di terminal agent                             │     │
-│     │ 2. Ketik `Lanjutkan session_state.md`                           │     │
+│     │ 2. Ketik `Lanjutkan docs/plans/<slug>.md`                       │     │
 │     └─────────────────────────────────────────────────────────────────┘     │
 │                               │                                             │
 │                               ▼                                             │
 │  3. INSTANT REHYDRATION (Zero Data Loss & Zero Freeze)                      │
-│     Pada sesi baru (0 token), agent hanya membaca session_state.md          │
+│     Pada sesi baru, agent membaca rencana + memory Grok otomatis            │
 │     (~1.500 token) dan langsung melanjutkan tugas detik itu juga!           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -168,5 +168,5 @@ Terinspirasi dari arsitektur memori **Claude Code** (`CLAUDE.md` memory ledger) 
 | [`setup.sh`](setup.sh) | Onboarding 1-Click Linux & macOS (`CooperxHarness`) |
 | [`setup.ps1`](setup.ps1) | Onboarding 1-Click Windows PowerShell (`CooperxHarness`) |
 | [`config.default.toml`](config.default.toml) | Konfigurasi default 256K Context Window |
-| [`.agents/rules/05-cooperx-memory.md`](.agents/rules/05-cooperx-memory.md) | Standar persistensi memori `CooperxMemory` |
+| [`.agents/rules/05-context-discipline.md`](.agents/rules/05-context-discipline.md) | Ambang context, penghematan token, protokol handover |
 | [`dashboard/`](dashboard/) | Web Telemetry Dashboard & API Gateway (`CooperxTelemetry`) |
