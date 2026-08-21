@@ -160,3 +160,26 @@ Aturan pra-daftar (pertahankan bila mean_len >= 4.27) tidak terpenuhi.
 
 ## Files Modified
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh (baru)
+
+### Analisis kuantisasi (2026-08-21) — docs/plans/quantization_decision.md
+
+Fakta arsitektur terverifikasi dari metadata GGUF: qwen35 DENSE (bukan MoE),
+65 blok, full_attention_interval 4 -> 16 layer KV, head_count_kv 4,
+key_length/value_length 256. KV/token: q4_0 18 KiB, q5_1 24, q8_0 34, f16 64.
+
+Distribusi context NYATA (309 req): median 75.156, p90 152.440, p99 171.943.
+Jauh lebih panjang dari asumsi riset Perplexity (32-64K).
+
+Temuan pokok: bobot mendominasi bandwidth 10:1 terhadap KV bahkan di p90 152K.
+Jadi kuantisasi bobot = pengungkit kecepatan; kuantisasi KV = pengungkit kualitas
+yang dibatasi VRAM, bukan bandwidth. Q8_0 + KV berkualitas TIDAK MUAT di 72 GiB
+pada 168K x 4 (97,8%).
+
+Perkiraan lama "bobot 13,8 ms = 26% dari pass" DIBATALKAN — tidak konsisten
+dengan 27,1 GiB / 900 GB/s = ~32 ms.
+
+Rencana bertahap: (1) Q8_0 -> UD-Q6_K (file sudah ada, 20,5 GiB, belum terpakai),
+(2) headroom dipakai untuk KV q4_0 -> q5_1, (3) baru pertimbangkan Q4_K_M + q8_0.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/docs/plans/quantization_decision.md (baru)
