@@ -183,3 +183,24 @@ Rencana bertahap: (1) Q8_0 -> UD-Q6_K (file sudah ada, 20,5 GiB, belum terpakai)
 
 ## Files Modified
 - /home/gspe-ai1/project/gspexgrok-agent/docs/plans/quantization_decision.md (baru)
+
+### Analisis multi-stream (2026-08-21) — docs/plans/multistream_scaling.md
+
+Prefill 670 t/s = 17,6% waktu server; decode 23 t/s = 82,4%. Tokenization BUKAN
+masalah; prioritas = arsitektur serving.
+
+TPS/user dikontrol context (32-128K): 1 slot 40,4 | 2 slot 22,5 | 3 slot 16,2.
+Agregat 40,4 -> 45,0 -> 48,8 (batching lemah). Sel runtuh: 3 slot @ >128K = 1,5 TPS.
+CV naik 0,33 -> 0,59 -> 0,79 -> 0,90.
+
+Mekanisme dari source: need_n_rs_seq() = draft.n_max (common/common.h:386);
+cache RS alokasi n_stream*(1+n_rs_seq) bidang (llama-kv-cache-dsv4.cpp:912);
+snapshot per langkah ~ n_rs_seq*n_seqs (:815). State SSM 147 MiB/sequence
+(49 layer x 6144 x 128 x 4B) -> par4 n7 = 4,6 GiB.
+
+Konsekuensi penting: menurunkan --parallel membebaskan KV cukup untuk membeli
+q8_0 TANPA menurunkan bobot. par2 n7 Q8_0 q8_0 @168K = 79,1%. Ini membalik
+kesimpulan memo kuantisasi.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/docs/plans/multistream_scaling.md (baru)
