@@ -88,18 +88,18 @@ rencana, sehingga compaction memang harus terjadi di sana.
 Posisi sekarang:
 
 ```
-auto_compact_threshold_percent = 72     # jaring pengaman NATIVE
+auto_compact_threshold_percent = 80     # jaring pengaman NATIVE
 handover di batas tugas                 # jalur utama, kualitas ringkasan lebih baik
 ```
 
 Aritmetika untuk `context_window = 131.072`:
 
 ```
-72% = 94.371 token  + max_tokens 12.288 = 106.659   <= plafon kinerja 128.000  ✔
+80% = 104.858 token + max_tokens 12.288 = 117.146   <= plafon kinerja 128.000  ✔
 85% = 111.411 token + max_tokens 12.288 = 123.699   mepet ke plafon           ✘
 ```
 
-72% dipilih bukan karena hemat token, melainkan karena compaction yang dipicu
+80% dipilih bukan karena hemat token, melainkan karena compaction yang dipicu
 mendekati 128.000 masuk ke rezim ~1,5 TPS dan berujung timeout.
 
 ## Yang TIDAK kita bangun

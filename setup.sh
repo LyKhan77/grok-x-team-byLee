@@ -96,9 +96,14 @@ auto_update = false
 telemetry = false
 
 [session]
-# Compaction NATIVE Grok sebagai jaring pengaman pada 72% (94.371 token).
-auto_compact_threshold_percent = 72
+# Compaction NATIVE Grok sebagai jaring pengaman pada 80% (104.858 token).
+auto_compact_threshold_percent = 80
 load_envrc = true
+
+# Memory native Grok — DEFAULT false. Ini yang membuat agent mengingat inti
+# sesi sebelumnya setelah /clear. Tersimpan LOKAL di ~/.grok/memory/.
+[memory]
+enabled = true
 
 [models]
 default = "internal-qwen"

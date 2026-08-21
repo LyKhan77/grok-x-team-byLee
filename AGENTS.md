@@ -158,9 +158,15 @@ Bila `sessions/<dev-id>.md` belum ada, salin `sessions/_template.md`.
 
 ### 2. Selama sesi — tulis checkpoint di batas tugas
 
-Perbarui `sessions/<dev-id>.md` setiap kali sebuah milestone berpindah ke `[x]`,
-sebuah bug terverifikasi selesai, atau sebuah keputusan arsitektural diambil —
-**berapa pun context saat itu.** Ambang 80% adalah jaring pengaman, bukan jadwal.
+Pada tiap batas tugas — milestone berpindah ke `[x]`, bug terverifikasi selesai,
+atau keputusan arsitektural diambil — lakukan **dua** hal, berapa pun context saat itu:
+
+1. `/flush` — menulis ringkasan sesi ke memory Grok. Ringkasan ini dicari
+   **otomatis pada giliran pertama sesi berikutnya**, sehingga setelah `/clear`
+   agent tetap mengingat intinya. Sifatnya lokal per mesin.
+2. Perbarui `sessions/<dev-id>.md` — state yang terbagi ke tim lewat git.
+
+Ambang 80% adalah jaring pengaman, bukan jadwal.
 
 Meringkas di tengah investigasi menghasilkan ringkasan tentang keadaan setengah
 jadi, dan sesi berikutnya mewarisi kebingungan itu.

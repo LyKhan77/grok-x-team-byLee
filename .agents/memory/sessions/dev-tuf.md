@@ -372,3 +372,36 @@ lebih baik; ambang native jadi jaring pengaman.
 - /home/gspe-ai1/project/gspexgrok-agent/config.default.toml
 - /home/gspe-ai1/project/gspexgrok-agent/setup.sh
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
+
+### Rencana horizon long-task + memory native (2026-08-21)
+
+Akar compaction 15-20 menit TERHITUNG: generasi ringkasan ~4.000 token pada
+3,9 TPS (4 slot lama) = 1.026 detik = 17,1 menit + prefill 157s = 19,7 menit.
+Cocok persis dengan laporan user. Dengan 3 slot @41,5 TPS turun ke ~4,2 menit —
+sudah diperbaiki oleh deploy hari ini, BELUM diverifikasi karena belum ada
+compaction sejak restart.
+
+Temuan besar: [memory] Grok DEFAULT false dan ~/.grok/memory/ kosong. Fiturnya
+persis yang diminta user: initial_injection otomatis giliran pertama, /flush
+menulis ringkasan sesi terindeks, session.save_on_end, memory_search/memory_get
+untuk memilih sesi lampau, grok --resume <ID_ATAU_JUDUL>.
+
+DUA BUG PENEMPATAN TOML yang saya buat lalu perbaiki:
+1. auto_compact_threshold_percent ada di section [session], BUKAN [models].
+   Skrip patch menyisipkannya di [models] -> tidak akan dibaca Grok.
+2. Menyisipkan [memory] sebelum load_envrc membuat load_envrc (milik [session])
+   terserap ke [memory].
+
+Ambang 72 -> 80 sesuai permintaan user.
+
+Ketegangan yang dicatat di rencana: menaikkan context membuat compaction lebih
+jarang TAPI lebih lama tiap kali (131K=4,2mnt, 168K=5,0mnt, 256K=6,8mnt).
+Hanya reduksi output tool yang memperkecil frekuensi DAN durasi.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/docs/plans/long_task_horizon.md (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/config.default.toml
+- /home/gspe-ai1/project/gspexgrok-agent/setup.sh
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
+- /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
+- /home/gspe-ai1/project/gspexgrok-agent/docs/harness_scope.md

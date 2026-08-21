@@ -8,10 +8,10 @@ auto_update = false
 telemetry = false
 
 [session]
-# Compaction NATIVE Grok sebagai jaring pengaman. 72% x 131.072 = 94.371 token;
-# +max_tokens 12.288 = 106.659, aman di bawah plafon kinerja 128.000 token.
+# Compaction NATIVE Grok sebagai jaring pengaman. 80% x 131.072 = 104.858 token;
+# +max_tokens 12.288 = 117.146, aman di bawah plafon kinerja 128.000 token.
 # Jalur utama tetap handover di batas tugas (lihat AGENTS.md §Protokol Sesi).
-auto_compact_threshold_percent = 72
+auto_compact_threshold_percent = 80
 load_envrc = true
 
 [models]
@@ -59,3 +59,11 @@ min_p = 0.0
 repeat_penalty = 1.0
 presence_penalty = 0.0
 api_key = "dev-localhost"
+
+# Memory native Grok. DEFAULT-nya false, jadi harus dinyalakan eksplisit.
+# Ini yang membuat agent tetap mengingat inti sesi sebelumnya setelah /clear:
+# memory dicari otomatis pada giliran pertama tiap sesi dan setelah compaction.
+# Pakai /flush di batas tugas untuk menulis ringkasan sesi yang dapat dicari.
+# Catatan: isinya tersimpan di ~/.grok/memory/ -> LOKAL per mesin, tidak terbagi.
+[memory]
+enabled = true

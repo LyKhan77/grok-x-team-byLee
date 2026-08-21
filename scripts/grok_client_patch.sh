@@ -69,13 +69,32 @@ sed -i -E 's/^([[:space:]]*min_p[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*repeat_penalty[[:space:]]*=[[:space:]]*).*/\11.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*presence_penalty[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*top_k[[:space:]]*=[[:space:]]*).*/\120/' "$TMP"
-# 3b. compaction native Grok: 72% x 131.072 = 94.371 token. Default Grok 85%
+# 3b. compaction native Grok: 80% x 131.072 = 104.858 token. Default Grok 85%
 #     memicu compaction mendekati plafon kinerja 128.000, di mana TPS runtuh.
 if grep -qE '^[[:space:]]*auto_compact_threshold_percent' "$TMP"; then
-  sed -i -E 's/^([[:space:]]*auto_compact_threshold_percent[[:space:]]*=[[:space:]]*).*/\172/' "$TMP"
+  sed -i -E 's/^([[:space:]]*auto_compact_threshold_percent[[:space:]]*=[[:space:]]*).*/\180/' "$TMP"
 else
-  sed -i '0,/^\[models\]/s//[models]\nauto_compact_threshold_percent = 72/' "$TMP"
+  # WAJIB di bawah [session] — di [models] tidak akan dibaca Grok
+  if grep -qE '^\[session\]' "$TMP"; then
+    sed -i '0,/^\[session\]/s//[session]\nauto_compact_threshold_percent = 80/' "$TMP"
+  else
+    printf '\n[session]\nauto_compact_threshold_percent = 80\n' >> "$TMP"
+  fi
 fi
+# 3c. memory native Grok. DEFAULT false -> harus dinyalakan eksplisit.
+#     Inilah yang membuat agent tetap mengingat inti sesi sebelumnya setelah
+#     /clear: memory dicari otomatis pada giliran pertama tiap sesi.
+if grep -qE '^\[memory\]' "$TMP"; then
+  # blok sudah ada: pastikan enabled = true di dalamnya
+  if awk '/^\[memory\]/{f=1;next} /^\[/{f=0} f&&/^[[:space:]]*enabled[[:space:]]*=/{found=1} END{exit !found}' "$TMP"; then
+    sed -i -E '/^\[memory\]/,/^\[[^m]/ s/^([[:space:]]*enabled[[:space:]]*=[[:space:]]*).*/\1true/' "$TMP"
+  else
+    sed -i -E 's/^\[memory\]/[memory]\nenabled = true/' "$TMP"
+  fi
+else
+  printf '\n[memory]\nenabled = true\n' >> "$TMP"
+fi
+
 # 4. label yang menyesatkan -> 128K
 sed -i -E 's/Monster Context Window/Context Window/g; s/[0-9]+K (Dedicated|Monster Context Window|Context Window)/128K \1/g' "$TMP"
 
