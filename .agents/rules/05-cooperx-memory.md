@@ -8,17 +8,27 @@
 
 ## 0. Parameter Operasional (WAJIB sinkron dengan server)
 
+> **Revisi 2026-08-21** — `n_ctx` turun 172.032 → **131.072**, ambang handover
+> 88% → **80%**. Alasannya bukan penghematan VRAM, melainkan pengukuran: pada 3
+> slot aktif, context di atas 128K jatuh ke **1,5 TPS**. Ambang lama 88% memicu
+> compaction tepat di zona itu — itulah sebab "compaction failed", bukan sekadar
+> aritmetika `max_tokens`. Lihat `docs/plans/multistream_scaling.md`.
+
 | Parameter | Nilai | Konsekuensi bila salah |
 | :--- | :--- | :--- |
-| `n_ctx_slot` server | **172.032** (4 slot × 168K) | — |
-| `context_window` klien | **172.032** | Klien mengira punya lebih dari yang ada → overflow diam-diam |
+| `n_ctx_slot` server | **131.072** (3 slot × 128K) | — |
+| `context_window` klien | **131.072** | Klien mengira punya lebih dari yang ada → overflow diam-diam |
 | `max_tokens` klien | **12.288** | 🔴 Server memuat `prompt + max_tokens` dalam satu slot. `max_tokens` besar memangkas plafon prompt satu-lawan-satu dan **menyebabkan compaction failed** |
-| Ambang handover | **88%** = 151.388 token | — |
-| Sisa untuk output saat handover | 20.644 token | Cukup untuk `max_tokens` 12.288 + margin 40% |
+| Ambang handover | **80%** = 104.858 token | Di atas ini, compaction masuk zona lambat |
+| Sisa untuk output saat handover | 26.214 token | Cukup untuk `max_tokens` 12.288 + margin 113% |
+| Plafon keras "jangan lewat" | **128.000 token** | Di atas ini TPS runtuh ke ~1,5 pada 3 slot |
 
 **Aritmetika yang harus selalu dipenuhi:**
 ```
 ambang(%) × n_ctx_slot  +  max_tokens  ≤  n_ctx_slot
+
+80% × 131.072 + 12.288 = 117.146  ≤  131.072   ✔ margin 13.926
+88% × 131.072 + 12.288 = 127.631  ≤  131.072   ✔ margin  3.441  ← terlalu mepet
 ```
 Melanggar ini menghasilkan HTTP 500 saat compaction, bukan degradasi halus.
 
@@ -96,18 +106,18 @@ Bypass hanya untuk keadaan darurat: `git commit --no-verify` (dan wajib dijelask
 
 ---
 
-## 4. Protokol Handover 88%
+## 4. Protokol Handover 80%
 
-Ketika context mencapai **88%** (151.388 token) atau developer meminta ringkasan:
+Ketika context mencapai **80%** (104.858 token) atau developer meminta ringkasan:
 
-1. Agent **DILARANG** memicu auto-compaction teks mentah. Jedanya ~4,5 menit: prefill ~110 detik ditambah generasi ringkasan ~4.000 token pada ~25 t/s.
+1. Agent **DILARANG** memicu auto-compaction teks mentah. Pada ambang lama (151K) jedanya ~4,5 menit; pada 80% (105K) server masih di rezim 16-40 TPS sehingga compaction 10-25x lebih cepat.
 2. Agent **WAJIB** menjalankan *pre-compaction cleanup* (§5) lebih dulu.
 3. Agent **WAJIB** memperbarui `sessions/<dev-id>.md` dan `session_state.md` hingga 100% mutakhir.
 4. Agent **WAJIB** mengeluarkan Handover Card:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ ⚠️  CooperxMemory: Context 88% (151.388 / 172.032)                           │
+│ ⚠️  CooperxMemory: Context 80% (104.858 / 131.072)                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ Progres tersimpan di `.agents/memory/sessions/<dev-id>.md`                   │
 │                                                                             │
@@ -163,4 +173,103 @@ Jujur soal apa yang **belum** terpecahkan:
 
 - Ekstraksi lintas-sesi masih heuristik. Riset 2026: *"identifying what from session N should persist to session N+1 remains heuristic"* — belum ada solusi matang di industri.
 - Lapis 1 dan 2 tetap bergantung pada kepatuhan model. Hanya Lapis 3 yang mekanis, dan itu hanya menggigit saat commit.
-- Task yang memang butuh working context >151.388 token tetap harus compact di tengah jalan.
+- Task yang butuh working context >104.858 token harus dipecah lewat rantai sesi (§9), bukan dipaksakan dalam satu context.
+
+---
+
+## 9. Rantai Sesi (diadaptasi dari Hermes Agent)
+
+Hermes tidak memperlakukan sesi panjang sebagai satu context yang terus tumbuh.
+Sesi **dipecah** menjadi induk dan anak, dengan alasan pemecahan dicatat eksplisit
+(`end_reason = 'compression'`), sehingga rantai sesi bisa ditelusuri balik.
+
+Kita adaptasi: setiap sesi punya header di `sessions/<dev-id>.md`.
+
+```markdown
+## Sesi 2026-08-21-b
+Induk      : 2026-08-21-a
+Alasan     : ambang 80%          # 80%-threshold | task-boundary | manual | crash
+Task aktif : Deploy config parallel 3
+```
+
+Aturan:
+
+1. **Rantai tidak boleh putus.** Sesi baru yang melanjutkan pekerjaan WAJIB mengisi
+   `Induk`. Sesi yang benar-benar baru mengisi `Induk: (tidak ada)`.
+2. **Alasan wajib eksplisit.** `task-boundary` adalah yang sehat; `80%-threshold`
+   yang sering muncul menandakan disiplin §10 gagal.
+3. **Rehydration hanya membaca sesi terakhir**, bukan seluruh rantai. Rantai
+   ditelusuri hanya saat menjawab "kenapa dulu diputuskan begini".
+
+---
+
+## 10. Compact di Batas Tugas, Bukan di Ambang (diadaptasi dari Command Code)
+
+> "The best time to run compaction is before auto-compact fires — at a task
+> boundary or right after a conclusion is reached, because compacting at a moment
+> you choose gives the summarizer a clean story to compress, instead of whatever
+> mid-task state the threshold happens to catch."
+
+Ambang 80% adalah **jaring pengaman**, bukan jadwal. Agent WAJIB menawarkan
+handover pada setiap batas tugas alami, berapa pun context saat itu:
+
+* Sebuah milestone/ToDo berpindah ke `[x]`
+* Sebuah bug selesai diverifikasi
+* Sebuah keputusan arsitektural diambil dan dicatat
+* Sebelum memulai investigasi besar yang akan menyedot banyak file
+
+Alasannya bukan penghematan token, melainkan **kualitas ringkasan**: meringkas di
+tengah investigasi menghasilkan ringkasan tentang keadaan setengah jadi, dan sesi
+berikutnya mewarisi kebingungan itu.
+
+Metrik kesehatan harness: **proporsi handover dengan alasan `task-boundary`.**
+Bila `80%-threshold` mendominasi, harness gagal meski tidak pernah error.
+
+---
+
+## 11. Stabilitas Prefix — jangan rusak prompt cache
+
+Terukur di server ini: prefill median hanya **238 token** per request karena KV
+per slot dipakai ulang. Tetapi **8 request (2,2%) dengan prefill >20K menyumbang
+72,3% dari seluruh beban prefill**, puncaknya 151.712 token — sesi yang kehilangan
+prefix-nya dan harus diproses ulang dari nol.
+
+Prefix cache hanya bertahan selama **awal prompt tidak berubah satu byte pun**.
+Karena itu urutan context bersifat wajib, bukan selera:
+
+```
+[ STABIL — jangan diubah di tengah sesi ]
+  1. System prompt + rules
+  2. Project ledger (session_state.md)
+  3. Checkpoint sesi (sessions/<dev-id>.md)
+
+[ VOLATIL — hanya boleh tumbuh di bagian bawah ]
+  4. File yang sedang dibaca
+  5. Percakapan kerja
+```
+
+Aturan:
+
+1. **Jangan menyisipkan apa pun di atas.** Menambahkan satu baris di ledger
+   membatalkan cache seluruh prompt di bawahnya — biaya prefill 100K token.
+2. **Perbarui ledger di akhir sesi atau saat handover**, bukan setiap milestone
+   di tengah sesi, kecuali memang sedang handover.
+3. **Jangan resume context lama** untuk melanjutkan tugas; mulai sesi bersih lalu
+   baca checkpoint. Resume memaksa prefill penuh — itulah 72,3% beban prefill.
+
+---
+
+## 12. Batas Keras Memori (diadaptasi dari Hermes Agent)
+
+Hermes membatasi memori always-on secara keras dan **mengembalikan error alih-alih
+membuang entri diam-diam**. Kita adopsi prinsip gagal-berisik itu.
+
+| Berkas | Batas | Bila terlampaui |
+| :--- | ---: | :--- |
+| `sessions/<dev-id>.md` | 400 baris | Arsipkan ke `sessions/archive/<dev-id>-<tanggal>.md`, sisakan sesi terakhir |
+| `session_state.md` | 250 baris | Pangkas §Key Decisions yang sudah masuk `docs/plans/` |
+
+Agent **DILARANG** memangkas isi memori diam-diam agar muat. Bila batas terlampaui,
+agent WAJIB mengatakannya kepada developer dan meminta keputusan apa yang diarsipkan.
+Memori yang menyusut tanpa sepengetahuan pemiliknya lebih berbahaya daripada
+memori yang penuh.

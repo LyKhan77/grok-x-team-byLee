@@ -1,30 +1,31 @@
-# Session State — `<dev-id>`
+# Session State — <dev-id>
 
-> Diperbarui: <YYYY-MM-DDTHH:MM+07:00>  ·  Context: <n> / 172.032 (<pct>%)
-> Standar: [`.agents/rules/05-cooperx-memory.md`](../../rules/05-cooperx-memory.md)
+> Satu berkas per developer. Sesi terbaru di ATAS. Batas 400 baris (§12);
+> bila terlampaui, arsipkan ke `sessions/archive/<dev-id>-<tanggal>.md`.
+
+## Sesi <YYYY-MM-DD-x>
+
+Induk      : <id sesi sebelumnya, atau "(tidak ada)">
+Alasan     : <task-boundary | 80%-threshold | manual | crash>
+Dimulai    : <YYYY-MM-DD HH:MM>
 
 ## Session Intent
-<Satu paragraf: apa yang dikejar sesi ini dan kenapa.>
+<Apa yang dikejar sesi ini, satu paragraf.>
 
 ## Files Modified
-<!-- WAJIB path lengkap dari root repo. Tulis "(tidak ada)" bila memang belum ada. -->
-- `path/lengkap/file.ext` — dibuat|diubah|dihapus — test: PASS|FAIL|BELUM
+<WAJIB path lengkap + status. Kosongkan eksplisit dengan "(belum ada)".>
 
 ## Key Decisions
-<!-- Keputusan teknis BESERTA alasannya. Hasil tanpa alasan tidak berguna saat rehydration. -->
-- <keputusan> — alasan: <kenapa>
+<Keputusan teknis + ALASANNYA, bukan hanya hasilnya.>
 
 ## Milestone / ToDo
-- [x] <selesai dan terverifikasi>
-- [~] <sedang berjalan>
-- [ ] <belum mulai>
+- [ ] <item>
 
 ## Active Task
-<Yang sedang dikerjakan detik ini, cukup detail untuk dilanjutkan orang lain.>
+<Yang sedang dikerjakan detik ini.>
 
 ## Next Steps
-<!-- Harus bisa dieksekusi tanpa konteks tambahan. -->
-1. <langkah konkret>
+<Langkah konkret berikutnya, bisa dieksekusi tanpa konteks tambahan.>
 
 ## Blockers
-<Blocker beserta apa yang sudah dicoba. Tulis "(tidak ada)" bila memang tidak ada.>
+(tidak ada)

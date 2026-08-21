@@ -224,3 +224,23 @@ Compaction lambat KARENA dipicu di 151K, tepat di zona 1,5 TPS.
 
 ## Files Modified
 - /home/gspe-ai1/project/gspexgrok-agent/docs/plans/multistream_scaling.md
+
+### Harness direvisi untuk 131K (2026-08-21)
+
+Rules 05-cooperx-memory.md: n_ctx 172.032 -> 131.072, ambang 88% -> 80%
+(104.858 token). Alasan bukan VRAM melainkan pengukuran: >128K pada 3 slot = 1,5 TPS,
+dan ambang lama memicu compaction tepat di zona itu.
+
+Bagian baru yang diadaptasi:
+- §9 Rantai Sesi (Hermes) — header Induk/Alasan, rantai tidak boleh putus
+- §10 Compact di batas tugas (Command Code) — ambang = jaring pengaman, bukan jadwal;
+  metrik kesehatan = proporsi handover beralasan `task-boundary`
+- §11 Stabilitas prefix — urutan context stabil-di-atas/volatil-di-bawah, karena
+  2,2% request menyumbang 72,3% prefill akibat prefix hilang
+- §12 Batas keras memori (Hermes) — gagal-berisik, DILARANG memangkas diam-diam
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/.agents/rules/05-cooperx-memory.md
+- /home/gspe-ai1/project/gspexgrok-agent/.agents/memory/sessions/_template.md
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/cooperx_apply_parallel3.sh (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
