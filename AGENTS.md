@@ -17,7 +17,7 @@ Setiap subsistem dalam platform CooperAgent distandarisasi menggunakan kode seri
 
 | Kode Seri Modul | Deskripsi & Cakupan Teknis |
 | :--- | :--- |
-| **`CooperxCompute`** | Engine inferensi GPU: **4 Slots x 256K Dedicated Context (Total 1.048.576 Tokens)** dengan Speculative Acceleration & KV-Cache `q4_0` di 3x RTX 3090. |
+| **`CooperxCompute`** | Engine inferensi GPU pada 3x RTX 3090: **4 Slots paralel, live `--ctx-size 524288` (4 x 128K)**, KV-Cache `q4_0`, Speculative Acceleration. Target 4 x 256K (1.048.576 token) menunggu integrasi DFLASH 2 — lihat [`.agents/memory/session_state.md`](.agents/memory/session_state.md) §2. |
 | **`CooperxMemory`** | Harness persistensi memori mandiri berbasis riset **Claude Code** & **Hermes Agent** (*Continuous State Checkpoint* $\rightarrow$ *90% Context Warning Handover Card* $\rightarrow$ *Instant 0-Token Rehydration*). |
 | **`CooperxHarness`** | Dukungan multi-agent fleksibel yang mengintegrasikan **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di [`setup.sh`](setup.sh) & [`setup.ps1`](setup.ps1). |
 | **`CooperxTelemetry`** | API Gateway (Port `8987`) dan SQLite Token Usage Leaderboard & Slot Visualizer Dashboard. |
@@ -45,7 +45,7 @@ gspexgrok-agent/
 ├── CHANGELOG.md                         # 📜 Checkpoint riwayat perubahan codebase (WAJIB DIUPDATE)
 ├── README.md                            # 🚀 Dokumentasi onboarding cepat developer CooperAgent
 ├── config.default.toml                  # ⚙️ Template konfigurasi agent (~/.grok/config.toml - 256K Context)
-├── server-optimize.sh                   # 🖥️ Runner CooperxCompute 4 Slots x 256K Context (3x GPU)
+├── server-optimize.sh                   # 🖥️ Salinan REFERENSI runner CooperxCompute (runner produksi = run-qwen.sh via systemd)
 ├── setup.sh                             # ⚡ 1-Click onboarding Linux & macOS (Grok + Pi Agent)
 ├── setup.ps1                            # 🪟 1-Click onboarding Windows PowerShell (Grok + Pi Agent)
 ├── .gitignore                           # 🛡️ Git ignore list (target/, temp/, secrets)
@@ -100,7 +100,7 @@ gspexgrok-agent/
 | :--- | :--- | :--- |
 | `./setup.sh` | Onboarding 1-Click untuk Linux & macOS (Pilihan Grok & Pi) | [setup.sh](setup.sh) |
 | `.\setup.ps1` | Onboarding 1-Click untuk Windows PowerShell | [setup.ps1](setup.ps1) |
-| `./server-optimize.sh` | Menjalankan CooperxCompute (4 Slots x 256K Context) di host GPU | [server-optimize.sh](server-optimize.sh) |
+| `sudo systemctl restart llamacpp.service` | Menjalankan/restart CooperxCompute di host GPU. Config nyata ada di `/home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh`, **bukan** `server-optimize.sh`. | [session_state.md](.agents/memory/session_state.md) |
 | `./test/run_stress_test.sh` | Menjalankan stress test & benchmark multi-stream | [test/run_stress_test.sh](test/run_stress_test.sh) |
 | `python3 scripts/standardize.py` | Menjalankan wizard standarisasi adaptif (CooperxStandard) | [scripts/standardize.py](scripts/standardize.py) |
 | `/standardization` | Slash command interaktif di chat agent | [.agents/skills/standardization/SKILL.md](.agents/skills/standardization/SKILL.md) |

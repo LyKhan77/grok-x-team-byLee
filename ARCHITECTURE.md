@@ -40,11 +40,11 @@ graph TD
             GPU2["GPU 2 (24GB)<br/>Layers 44-64 + Vision (~13.1 GB)"]
         end
 
-        subgraph SLOTS_MAP ["4 Dedicated Developer Slots (1,048,576 Total Context)"]
-            SLOT0["Slot 0: 256K Context"]
-            SLOT1["Slot 1: 256K Context"]
-            SLOT2["Slot 2: 256K Context"]
-            SLOT3["Slot 3: 256K Context"]
+        subgraph SLOTS_MAP ["4 Dedicated Developer Slots (live: 524.288 total context)"]
+            SLOT0["Slot 0: 128K Context"]
+            SLOT1["Slot 1: 128K Context"]
+            SLOT2["Slot 2: 128K Context"]
+            SLOT3["Slot 3: 128K Context"]
         end
     end
 
@@ -75,7 +75,7 @@ Setiap fitur dan subsistem dalam platform CooperAgent memiliki kode seri standar
 
 | Modul | Nama Sistem | Deskripsi Teknis |
 | :--- | :--- | :--- |
-| **`CooperxCompute`** | Inference & Hardware Engine | 4 Slots x 256K Context (Total 1M Tokens), Speculative Acceleration, KV-Cache `q4_0` pada 3x RTX 3090. |
+| **`CooperxCompute`** | Inference & Hardware Engine | 4 Slots paralel, live 4 x 128K (524.288 token); target 4 x 256K via DFLASH 2. Speculative Acceleration, KV-Cache `q4_0` pada 3x RTX 3090. |
 | **`CooperxMemory`** | Autonomous State & Handover | Checkpoint `.agents/memory/session_state.md`, 90% Context Warning Card, dan Instant 0-Token Rehydration. |
 | **`CooperxHarness`** | Multi-Agent Ecosystem | Dukungan native untuk **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di Linux, macOS, dan Windows. |
 | **`CooperxTelemetry`** | Telemetry Gateway & Dashboard | Next.js 14 API Gateway (Port `8987`), Developer Identity Tracker, dan Dark Mode TUI Dashboard. |
@@ -91,7 +91,7 @@ Setiap fitur dan subsistem dalam platform CooperAgent memiliki kode seri standar
 * **RAM Sistem:** 64 GB DDR5.
 * **PCIe Bus Topology:** P2P PCIe Gen4 direct bus communication.
 
-### 3.2 Alokasi 4 Slots x 256K Dedicated Context (Total 1.048.576 Tokens)
+### 3.2 Alokasi 4 Slots Dedicated Context — live 4 x 128K (524.288), target 4 x 256K (1.048.576)
 * **Model Utama:** **`Qwen 3.8 / 2.5 27B Q8_0`** (27.32B parameters, file GGUF ~29.03 GB).
 * **Speculative Draft Model:** **`Qwen2.5-Coder-0.5B-Q8_0.gguf`** (~400 MB pada GPU 0).
 * **Kuantisasi KV-Cache `q4_0`:** Total 1M tokens memakan **~37.7 GB Total** (**~12.58 GB per GPU**).
@@ -164,7 +164,7 @@ Terinspirasi dari arsitektur memori **Claude Code** (`CLAUDE.md` memory ledger) 
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Cetak biru arsitektur resmi CooperAgent & modul Cooperx |
 | [`AGENTS.md`](AGENTS.md) | Single Source of Truth pedoman developer & AI agent |
 | [`README.md`](README.md) | Panduan onboarding developer multi-OS |
-| [`server-optimize.sh`](server-optimize.sh) | Runner `CooperxCompute` 4 Slots x 256K Context (3x RTX 3090) |
+| [`server-optimize.sh`](server-optimize.sh) | **Salinan referensi** runner `CooperxCompute`. Runner produksi sebenarnya: `/home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh` di bawah systemd `llamacpp.service`. |
 | [`setup.sh`](setup.sh) | Onboarding 1-Click Linux & macOS (`CooperxHarness`) |
 | [`setup.ps1`](setup.ps1) | Onboarding 1-Click Windows PowerShell (`CooperxHarness`) |
 | [`config.default.toml`](config.default.toml) | Konfigurasi default 256K Context Window |

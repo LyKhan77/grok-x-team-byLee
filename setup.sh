@@ -102,29 +102,29 @@ load_envrc = true
 [models]
 default = "internal-qwen"
 stream_tool_calls = true
-temperature = 0.7
-top_p = 0.85
-min_p = 0.05
-repeat_penalty = 1.1
-max_completion_tokens = 65536
-max_tokens = 65536
-max_output_tokens = 65536
+temperature = 1.0
+top_p = 0.95
+min_p = 0.0
+repeat_penalty = 1.0
+max_completion_tokens = 12288
+max_tokens = 12288
+max_output_tokens = 12288
 
 [model.internal-qwen]
 model = "${DEFAULT_MODEL_NAME}"
 base_url = "${SERVER_URL}"
-name = "CooperAgent Qwen 3.8 (27B Q8 - 256K Dedicated)"
-description = "Dedicated 256K Monster Context Window via Port 8987 Gateway"
+name = "CooperAgent Qwen 3.8 (27B Q8 - 168K Dedicated)"
+description = "Dedicated 168K Dedicated Context Window via Port 8987 Gateway"
 api_backend = "chat_completions"
-context_window = 262144
-max_completion_tokens = 65536
-max_tokens = 65536
-max_output_tokens = 65536
-temperature = 0.7
-top_p = 0.85
-min_p = 0.05
-repeat_penalty = 1.1
-presence_penalty = 0.1
+context_window = 172032
+max_completion_tokens = 12288
+max_tokens = 12288
+max_output_tokens = 12288
+temperature = 1.0
+top_p = 0.95
+min_p = 0.0
+repeat_penalty = 1.0
+presence_penalty = 0.0
 api_key = "dev-${DEV_NAME}"
 EOF
     echo -e "${GREEN}✔ Konfigurasi Grok tersimpan di: ${CONFIG_FILE}${NC}"
@@ -153,9 +153,9 @@ if [ "$AGENT_CHOICE" == "2" ] || [ "$AGENT_CHOICE" == "3" ]; then
       "models": [
         {
           "id": "${DEFAULT_MODEL_NAME}",
-          "name": "CooperAgent Qwen 3.8 (27B Q8 - 256K)",
-          "contextWindow": 262144,
-          "maxTokens": 65536
+          "name": "CooperAgent Qwen 3.8 (27B Q8 - 168K)",
+          "contextWindow": 172032,
+          "maxTokens": 12288
         }
       ]
     }
