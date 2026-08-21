@@ -4,8 +4,51 @@
 #   bash grok_client_patch.sh            # terapkan
 #   bash grok_client_patch.sh --dry-run  # lihat diff saja
 set -euo pipefail
-CFG="${GROK_CONFIG:-$HOME/.grok/config.toml}"
-[[ -f "$CFG" ]] || { echo "Tidak ada $CFG — jalankan setup.sh dulu."; exit 1; }
+# Temukan config.toml. Grok CLI menyimpannya di profil pengguna OS, yang TIDAK
+# sama dengan $HOME ketika skrip dijalankan lewat WSL (bash dari PowerShell) —
+# di sana $HOME adalah /home/<user> milik WSL, bukan C:\Users\<user>.
+find_cfg() {
+  local c
+  [[ -n "${GROK_CONFIG:-}" ]] && { echo "$GROK_CONFIG"; return; }
+  for c in "$HOME/.grok/config.toml" \
+           "${USERPROFILE:-}/.grok/config.toml"; do
+    [[ -n "$c" && -f "$c" ]] && { echo "$c"; return; }
+  done
+  # WSL (/mnt/c) dan Git Bash (/c) -> profil Windows.
+  # Bisa cocok dengan lebih dari satu profil; menambal yang salah lebih buruk
+  # daripada gagal, jadi ambiguitas dilaporkan alih-alih ditebak.
+  local -a hits=()
+  for c in /mnt/c/Users/*/.grok/config.toml /c/Users/*/.grok/config.toml; do
+    [[ -f "$c" ]] && hits+=("$c")
+  done
+  if (( ${#hits[@]} == 1 )); then echo "${hits[0]}"; return; fi
+  if (( ${#hits[@]} > 1 )); then
+    { echo "AMBIGU: ditemukan ${#hits[@]} config di profil Windows:"
+      printf '  %s\n' "${hits[@]}"
+      echo "Pilih salah satu secara eksplisit:"
+      echo "  GROK_CONFIG=<salah satu di atas> bash $0"
+    } >&2
+    return 2
+  fi
+  return 1
+}
+
+rc=0; CFG="$(find_cfg)" || rc=$?
+(( rc == 2 )) && exit 1
+if [[ -z "$CFG" || ! -f "$CFG" ]]; then
+  echo "Tidak menemukan config.toml. Lokasi yang dicari:"
+  echo "  \$GROK_CONFIG                       = ${GROK_CONFIG:-(tidak diset)}"
+  echo "  \$HOME/.grok/config.toml            = $HOME/.grok/config.toml"
+  echo "  \$USERPROFILE/.grok/config.toml     = ${USERPROFILE:-(tidak diset)}/.grok/config.toml"
+  echo "  /mnt/c/Users/*/.grok/config.toml    (WSL)"
+  echo "  /c/Users/*/.grok/config.toml        (Git Bash)"
+  echo
+  echo "Bila memakai WSL/Git Bash di Windows, tunjuk langsung ke profil Windows:"
+  echo "  GROK_CONFIG=/mnt/c/Users/<nama>/.grok/config.toml bash $0"
+  echo "Bila memang belum pernah setup, jalankan setup.ps1 atau setup.sh dulu."
+  exit 1
+fi
+echo "Config: $CFG"
 
 TMP=$(mktemp); trap 'rm -f "$TMP"' EXIT
 cp "$CFG" "$TMP"

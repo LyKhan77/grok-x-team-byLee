@@ -244,3 +244,28 @@ Bagian baru yang diadaptasi:
 - /home/gspe-ai1/project/gspexgrok-agent/.agents/memory/sessions/_template.md
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/cooperx_apply_parallel3.sh (baru)
 - /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
+
+### Deploy parallel 3 BERHASIL + perbaikan klien Windows (2026-08-21 12:xx)
+
+Server live terverifikasi: parallel 3, ctx-size 393216, n_ctx/slot 131072,
+n-max 5, KV q8_0/q8_0, cache-ram 16384, override-kv 131072.
+VRAM 55.517 MiB = 75,3%. Prediksi saya 81,7% — MELESET 6,4 poin (4,7 GiB).
+Sebab: saya asumsikan overhead non-SSM 16,4 GiB konstan saat slot turun 4->3,
+padahal drafter-KV dan compute buffer ikut menyusut.
+
+Headroom 8,7% JANGAN dipakai menaikkan ctx kembali ke 168K — penurunan ke 131K
+didorong throughput terukur (>128K = 1,5 TPS pada 3 slot), bukan VRAM.
+
+Dua kegagalan di mesin dev Windows, keduanya diperbaiki:
+1. CRLF — repo tak punya .gitattributes, Git Windows autocrlf mengubah *.sh
+   sehingga `set -euo pipefail\r` ditolak. Diperbaiki dengan .gitattributes
+   (*.sh eol=lf). Berkas repo sendiri sudah LF; konversi terjadi di klien.
+2. `bash` dari PowerShell memanggil WSL, yang $HOME-nya /home/<user> dan BUKAN
+   profil Windows tempat Grok CLI menyimpan config. grok_client_patch.sh kini
+   mendeteksi GROK_CONFIG -> $HOME -> $USERPROFILE -> /mnt/c/Users/* -> /c/Users/*,
+   dan GAGAL-BERISIK bila cocok lebih dari satu profil (menambal config user
+   yang salah lebih buruk daripada gagal).
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/.gitattributes (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh
