@@ -337,3 +337,38 @@ membatalkan prompt cache semua sesi satu kali.
 
 ## Files Modified
 - /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
+
+### Skill /init-agent + /init-changelog, dan koreksi arah harness (2026-08-21)
+
+Verifikasi ~/.grok/README.md mengubah beberapa asumsi dasar:
+
+1. Skill kita di `.agents/skills/` TIDAK PERNAH terbaca. Grok hanya memindai
+   `./.grok/skills/`, `<repo>/.grok/skills/`, `~/.grok/skills/`, `~/.claude/skills/`.
+   Dipindahkan ke `.grok/skills/`. (Sudah dicek tidak ter-gitignore — kalau
+   ter-ignore, skill repo-scoped difilter.)
+2. Grok punya MEMORY NATIVE: ~/.grok/memory/<slug>-<hash8>/MEMORY.md (workspace)
+   dan ~/.grok/memory/MEMORY.md (global), dicari OTOMATIS pada giliran pertama
+   tiap sesi dan setelah compaction. Perintah /memory, grok memory edit/stats.
+   Keduanya di HOME -> lokal per mesin, tidak terbagi.
+3. Grok punya auto_compact_threshold_percent, DEFAULT 85. Kita tidak pernah
+   menyetelnya — hanya ada komentar "auto_compact dinonaktifkan" di
+   config.default.toml, yang tidak menonaktifkan apa pun. Jadi selama ini
+   compaction berjalan di 85% memakai default.
+
+Disetel ke 72%: 94.371 + 12.288 = 106.659, aman di bawah plafon kinerja 128.000.
+85% memberi 123.699 — terlalu dekat ke zona 1,5 TPS.
+
+Koreksi arah: perplex-2 benar bahwa compaction harus milik Grok, bukan dibangun
+ulang. Handover di batas tugas tetap jalur utama karena kualitas ringkasannya
+lebih baik; ambang native jadi jaring pengaman.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/.grok/skills/init-agent/SKILL.md (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/.grok/skills/init-changelog/SKILL.md (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/.grok/skills/checkpoint/SKILL.md (pindah)
+- /home/gspe-ai1/project/gspexgrok-agent/.grok/skills/standardization/SKILL.md (pindah)
+- /home/gspe-ai1/project/gspexgrok-agent/docs/harness_scope.md (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
+- /home/gspe-ai1/project/gspexgrok-agent/config.default.toml
+- /home/gspe-ai1/project/gspexgrok-agent/setup.sh
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/grok_client_patch.sh

@@ -69,6 +69,13 @@ sed -i -E 's/^([[:space:]]*min_p[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*repeat_penalty[[:space:]]*=[[:space:]]*).*/\11.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*presence_penalty[[:space:]]*=[[:space:]]*).*/\10.0/' "$TMP"
 sed -i -E 's/^([[:space:]]*top_k[[:space:]]*=[[:space:]]*).*/\120/' "$TMP"
+# 3b. compaction native Grok: 72% x 131.072 = 94.371 token. Default Grok 85%
+#     memicu compaction mendekati plafon kinerja 128.000, di mana TPS runtuh.
+if grep -qE '^[[:space:]]*auto_compact_threshold_percent' "$TMP"; then
+  sed -i -E 's/^([[:space:]]*auto_compact_threshold_percent[[:space:]]*=[[:space:]]*).*/\172/' "$TMP"
+else
+  sed -i '0,/^\[models\]/s//[models]\nauto_compact_threshold_percent = 72/' "$TMP"
+fi
 # 4. label yang menyesatkan -> 128K
 sed -i -E 's/Monster Context Window/Context Window/g; s/[0-9]+K (Dedicated|Monster Context Window|Context Window)/128K \1/g' "$TMP"
 

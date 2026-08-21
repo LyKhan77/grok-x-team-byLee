@@ -96,7 +96,8 @@ auto_update = false
 telemetry = false
 
 [session]
-# auto_compact dinonaktifkan agar tidak ada jeda freeze, gunakan CooperxMemory handover
+# Compaction NATIVE Grok sebagai jaring pengaman pada 72% (94.371 token).
+auto_compact_threshold_percent = 72
 load_envrc = true
 
 [models]

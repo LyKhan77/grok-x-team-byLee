@@ -92,9 +92,13 @@ gspexgrok-agent/
     │       ├── _template.md             # Salin ini saat sesi pertama
     │       ├── <dev-id>.md              # Checkpoint milik satu developer
     │       └── archive/                 # Sesi lama yang sudah diarsipkan
-    └── skills/
-        ├── checkpoint/SKILL.md          # Slash command /checkpoint
-        └── standardization/SKILL.md     # Slash command /standardization
+    └── rules/                       # (lanjutan) — TIDAK dibaca otomatis
+
+├── .grok/skills/                        # 🔌 Slash command — DIBACA OTOMATIS oleh Grok
+│   ├── init-agent/SKILL.md              # /init-agent      — susun AGENTS.md dari repo
+│   ├── init-changelog/SKILL.md          # /init-changelog  — catatan checkpoint perubahan
+│   ├── checkpoint/SKILL.md              # /checkpoint      — simpan state sesi
+│   └── standardization/SKILL.md         # /standardization — kuesioner standar proyek
 ```
 
 ---
@@ -114,6 +118,23 @@ gspexgrok-agent/
 
 ## 6. Coding Conventions & Guardrails
 1. **Filosofi YAGNI & Kesederhanaan:** Prioritaskan solusi paling minimal, bersih, dan langsung bekerja. Hindari spekulasi abstraksi yang berlebihan.
+
+## Batas Scope — apa disimpan di mana
+
+Ingatan sesi tiap developer tersimpan **lokal di mesinnya**, bukan di repo:
+
+| Lapis | Pemilik | Lokasi | Terbagi? |
+| :--- | :--- | :--- | :---: |
+| Inference, KV, slot | llama.cpp | VRAM + RAM server | — |
+| Sesi, compaction, resume, memory | Grok CLI | `~/.grok/sessions/`, `~/.grok/memory/` | **tidak** |
+| Instruksi, keputusan, changelog | Repository | `AGENTS.md`, `docs/`, `CHANGELOG.md` | **ya** |
+
+Aturannya satu kalimat: **bila developer lain perlu melihatnya, tempatnya di git.**
+Jangan menyimpan pengetahuan tim di memory Grok — ia tidak ikut berpindah mesin.
+
+Rincian: [`docs/harness_scope.md`](docs/harness_scope.md).
+
+---
 
 ## Protokol Sesi (WAJIB — ini satu-satunya berkas yang dibaca otomatis)
 
