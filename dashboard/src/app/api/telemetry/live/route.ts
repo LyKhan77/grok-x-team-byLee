@@ -61,9 +61,9 @@ export async function GET() {
       },
       model: {
         name: 'Qwen 3.8 / 2.5 27B Q8_0 GGUF',
-        context_window: 172032,   // 4 slot x 168K, selaras run-qwen.sh --ctx-size 688128
+        context_window: 131072,   // 3 slot x 128K, selaras run-qwen.sh --ctx-size 393216
         flash_attention: true,
-        kv_cache_type: 'q4_0',    // --cache-type-k/v q4_0
+        kv_cache_type: 'q8_0',    // --cache-type-k/v q8_0
         max_output_tokens: 12288, // selaras ~/.grok/config.toml max_tokens
       },
       is_mock: false,

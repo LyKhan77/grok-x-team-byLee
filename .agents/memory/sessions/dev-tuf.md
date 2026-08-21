@@ -290,3 +290,22 @@ config.default.toml, setup.sh, setup.ps1 -> context_window 131072.
 - /home/gspe-ai1/project/gspexgrok-agent/config.default.toml
 - /home/gspe-ai1/project/gspexgrok-agent/setup.sh
 - /home/gspe-ai1/project/gspexgrok-agent/setup.ps1
+
+### Sisa nilai lama di berkas onboarding & dashboard dibersihkan (2026-08-21)
+
+Ditemukan saat verifikasi menyeluruh, bukan dilaporkan user:
+- setup.ps1 blok Pi agent masih contextWindow 262144 dan maxTokens 65536 —
+  belum pernah ikut diperbarui sejak awal proyek.
+- setup.sh blok Pi agent contextWindow 172032.
+- Label "168K"/"256K Dedicated" di kedua setup.
+- dashboard telemetry/live: context_window 172032, kv_cache_type q4_0.
+
+Semua diselaraskan ke 131072 / 12288 / q8_0. Verifikasi silang klien-vs-server
+untuk temperature, top_p, min_p, repeat_penalty, presence_penalty, context_window
+kini cocok seluruhnya. top_k tidak ada di config.default.toml sehingga memakai
+default server (20).
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/setup.sh
+- /home/gspe-ai1/project/gspexgrok-agent/setup.ps1
+- /home/gspe-ai1/project/gspexgrok-agent/dashboard/src/app/api/telemetry/live/route.ts
