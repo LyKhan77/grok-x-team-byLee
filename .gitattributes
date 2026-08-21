@@ -1,0 +1,24 @@
+# Normalisasi akhir baris.
+#
+# Tanpa berkas ini, Git di Windows (core.autocrlf=true, default) mengonversi
+# *.sh menjadi CRLF saat checkout. Bash lalu membaca `set -euo pipefail\r`
+# dan gagal dengan "set: pipefail: invalid option name".
+
+* text=auto
+
+# Skrip yang dieksekusi bash/sh WAJIB LF, di sistem operasi mana pun
+*.sh        text eol=lf
+*.bash      text eol=lf
+scripts/hooks/*  text eol=lf
+
+# Skrip Windows tetap CRLF
+*.ps1       text eol=crlf
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# Biner jangan disentuh
+*.gguf      binary
+*.png       binary
+*.jpg       binary
+*.pdf       binary
+*.patch     -text
