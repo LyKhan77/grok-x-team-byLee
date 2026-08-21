@@ -44,7 +44,7 @@ gspexgrok-agent/
 ├── ARCHITECTURE.md                      # 🏛️ Cetak biru arsitektur teknis lengkap CooperAgent
 ├── CHANGELOG.md                         # 📜 Checkpoint riwayat perubahan codebase (WAJIB DIUPDATE)
 ├── README.md                            # 🚀 Dokumentasi onboarding cepat developer CooperAgent
-├── config.default.toml                  # ⚙️ Template konfigurasi agent (~/.grok/config.toml - 256K Context)
+├── config.default.toml                  # ⚙️ Template config klien (~/.grok/config.toml — 131.072, ambang 85%)
 ├── server-optimize.sh                   # 🖥️ Salinan REFERENSI runner CooperxCompute (runner produksi = run-qwen.sh via systemd)
 ├── setup.sh                             # ⚡ 1-Click onboarding Linux & macOS (Grok + Pi Agent)
 ├── setup.ps1                            # 🪟 1-Click onboarding Windows PowerShell (Grok + Pi Agent)

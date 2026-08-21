@@ -1,5 +1,11 @@
 # Rencana: Horizon Long-Task, Compaction Cepat, dan Ingatan Lintas Sesi
 
+> ⚠️ **DOKUMEN HISTORIS.** Isinya mencatat keadaan dan rencana pada saat ditulis,
+> bukan konfigurasi yang berjalan sekarang. Untuk keadaan terkini lihat
+> [`ARCHITECTURE.md`](../../ARCHITECTURE.md) dan [`CHANGELOG.md`](../../CHANGELOG.md).
+> Konfigurasi live per 2026-08-21: **3 slot × 131.072**, KV `q8_0`,
+> `--spec-draft-n-max 5`, ambang compaction 85%, VRAM 75,3%.
+
 Tanggal: 2026-08-21. Status: **rencana, belum dieksekusi.**
 
 ## 1. Akar lambatnya compaction sudah teridentifikasi — dan sebagian sudah hilang

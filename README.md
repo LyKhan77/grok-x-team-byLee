@@ -10,8 +10,8 @@ Repository: **`https://github.com/LyKhan77/grok-x-team-byLee.git`**
 
 | Kode Seri Modul | Deskripsi & Cakupan Teknis |
 | :--- | :--- |
-| **`CooperxCompute`** | Engine inferensi GPU pada 3x RTX 3090: **4 Slots paralel, live 4 x 128K context (total 524.288 token)**, KV-Cache `q4_0` & Speculative Acceleration. Target 4 x 256K sedang dikerjakan via DFLASH 2. |
-| **`CooperxMemory`** | Harness persistensi memori mandiri berbasis riset **Claude Code** & **Hermes Agent** (*Continuous State Checkpoint* $\rightarrow$ *90% Context Warning Handover Card* $\rightarrow$ *Instant 0-Token Rehydration*). |
+| **`CooperxCompute`** | Engine inferensi GPU pada 3× RTX 3090: **3 slot paralel × 128K** (total 393.216 token), KV-Cache `q8_0`, DFLASH 2 speculative decoding aktif. VRAM 75,3%. |
+| **`CooperxMemory`** | Disiplin context: rencana bertahan di `docs/plans/`, batasi keluaran tool, ambang compaction 85% sebagai jaring pengaman. State sesi pribadi ditangani memory native Grok (lokal per mesin). |
 | **`CooperxHarness`** | Dukungan multi-agent fleksibel yang mengintegrasikan **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di [`setup.sh`](setup.sh) & [`setup.ps1`](setup.ps1). |
 | **`CooperxTelemetry`** | API Gateway (Port `8987`) dan SQLite Token Usage Leaderboard & Slot Visualizer Dashboard. |
 | **`CooperxStandard`** | Adaptive Project Standardization Wizard (`/standardization` & `scripts/standardize.py`). |
@@ -52,7 +52,7 @@ Buka terminal di folder project coding mana saja, lalu jalankan salah satu agent
 * **Grok Build (Fullscreen Rust TUI):** `grok`
 * **Pi Agent (Lightweight Inline CLI):** `pi`
 
-Model akan otomatis menggunakan **[CooperAgent Qwen 3.8 Dedicated 256K]** yang terhubung ke AI server Gateway lokal kantor (`http://192.168.2.143:8987/api/v1`).
+Model akan otomatis menggunakan **[CooperAgent Qwen 3.8 — 128K Dedicated]** yang terhubung ke AI server Gateway lokal kantor (`http://192.168.2.143:8987/api/v1`).
 
 📊 **Pantau Live Telemetry & Penggunaan Token Tim:** Buka browser di [http://192.168.2.143:8987/](http://192.168.2.143:8987/).
 

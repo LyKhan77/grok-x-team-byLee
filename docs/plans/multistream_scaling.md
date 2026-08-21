@@ -1,5 +1,11 @@
 # Ketidakstabilan Multi-Stream — Analisis Akar Masalah
 
+> ⚠️ **DOKUMEN HISTORIS.** Isinya mencatat keadaan dan rencana pada saat ditulis,
+> bukan konfigurasi yang berjalan sekarang. Untuk keadaan terkini lihat
+> [`ARCHITECTURE.md`](../../ARCHITECTURE.md) dan [`CHANGELOG.md`](../../CHANGELOG.md).
+> Konfigurasi live per 2026-08-21: **3 slot × 131.072**, KV `q8_0`,
+> `--spec-draft-n-max 5`, ambang compaction 85%, VRAM 75,3%.
+
 Tanggal: 2026-08-21. Basis: 8.520 baris journal (309 request selesai).
 Status: analisis, belum dieksekusi.
 

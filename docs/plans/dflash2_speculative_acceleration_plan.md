@@ -1,5 +1,11 @@
 # ⚡ Implementation Plan: DFLASH 2 Speculative Acceleration for Qwen3.8-27B
 
+> ⚠️ **DOKUMEN HISTORIS.** Isinya mencatat keadaan dan rencana pada saat ditulis,
+> bukan konfigurasi yang berjalan sekarang. Untuk keadaan terkini lihat
+> [`ARCHITECTURE.md`](../../ARCHITECTURE.md) dan [`CHANGELOG.md`](../../CHANGELOG.md).
+> Konfigurasi live per 2026-08-21: **3 slot × 131.072**, KV `q8_0`,
+> `--spec-draft-n-max 5`, ambang compaction 85%, VRAM 75,3%.
+
 > **Module Series:** `CooperxCompute`  
 > **Target Hardware:** 3x NVIDIA GeForce RTX 3090 (72 GB VRAM) + Intel Core Ultra 7 265  
 > **Ecosystem:** CooperAgent  

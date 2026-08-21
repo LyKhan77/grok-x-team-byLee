@@ -75,7 +75,7 @@ Setiap fitur dan subsistem dalam platform CooperAgent memiliki kode seri standar
 
 | Modul | Nama Sistem | Deskripsi Teknis |
 | :--- | :--- | :--- |
-| **`CooperxCompute`** | Inference & Hardware Engine | 4 Slots paralel, live 4 x 128K (524.288 token); target 4 x 256K via DFLASH 2. Speculative Acceleration, KV-Cache `q4_0` pada 3x RTX 3090. |
+| **`CooperxCompute`** | Inference & Hardware Engine | **3 slot paralel × 128K** (`--ctx-size 393216`), KV-Cache `q8_0`, DFLASH 2 speculative decoding (`--spec-draft-n-max 5`) pada 3× RTX 3090. VRAM 75,3%. |
 | **`CooperxMemory`** | Disiplin Context & Handover | Ambang handover 85%, batasi keluaran tool, rencana bertahan di `docs/plans/`. State sesi pribadi ditangani memory native Grok (lokal per mesin). |
 | **`CooperxHarness`** | Multi-Agent Ecosystem | Dukungan native untuk **Grok Build (Rust TUI)** dan **Pi Agent (Inline CLI)** di Linux, macOS, dan Windows. |
 | **`CooperxTelemetry`** | Telemetry Gateway & Dashboard | Next.js 14 API Gateway (Port `8987`), Developer Identity Tracker, dan Dark Mode TUI Dashboard. |
@@ -91,11 +91,12 @@ Setiap fitur dan subsistem dalam platform CooperAgent memiliki kode seri standar
 * **RAM Sistem:** 64 GB DDR5.
 * **PCIe Bus Topology:** P2P PCIe Gen4 direct bus communication.
 
-### 3.2 Alokasi 4 Slots Dedicated Context — live 4 x 128K (524.288), target 4 x 256K (1.048.576)
+### 3.2 Alokasi 3 Slot Dedicated Context — 3 × 131.072 (`--ctx-size 393216`)
 * **Model Utama:** **`Qwen 3.8 / 2.5 27B Q8_0`** (27.32B parameters, file GGUF ~29.03 GB).
-* **Speculative Draft Model:** **`Qwen2.5-Coder-0.5B-Q8_0.gguf`** (~400 MB pada GPU 0).
-* **Kuantisasi KV-Cache `q4_0`:** Total 1M tokens memakan **~37.7 GB Total** (**~12.58 GB per GPU**).
-* **Total VRAM Terpakai:** **~22.26 GB / 24.57 GB per GPU** (Menyisakan buffer aman **~2.31 GB VRAM bebas** per kartu).
+* **Speculative Drafter:** **`Qwen3.8-27B-DFlash2-Q4_K_M.gguf`** (1,1 GB, tersebar di CUDA0,1,2 — drafter meminjam `output.weight` milik target sehingga `--spec-draft-device` wajib mencakup ketiganya).
+* **Kuantisasi KV-Cache `q8_0`:** 34 KiB/token (16 dari 65 layer memegang KV — arsitektur hybrid SSM). Total 393.216 token = **13.056 MiB**.
+* **Total VRAM Terukur:** **55.517 MiB / 73.728 MiB = 75,3%** (~18,1 GB per GPU).
+* **Plafon praktis:** menaikkan ke 3 × 168K terukur menjatuhkan p10 throughput dari 11,2 ke 2,2 TPS dan dibatalkan — lihat [`docs/plans/long_task_horizon.md`](docs/plans/long_task_horizon.md).
 
 ---
 
@@ -115,10 +116,11 @@ Terinspirasi dari arsitektur memori **Claude Code** (`CLAUDE.md` memory ledger) 
 │     - Checklist plan.md yang sedang berjalan                                │
 │                               │                                             │
 │                               ▼                                             │
-│  2. EARLY WARNING & CONTEXT MONITOR (Threshold 90%)                         │
-│     Ketika sesi mencapai ~230K tokens (90% dari 256K), agent menampilkan:  │
+│  2. AMBANG COMPACTION NATIVE GROK (85% = 111.411 token)                     │
+│     Jaring pengaman, bukan jadwal. Jalur utama: /flush lalu /new di batas   │
+│     tugas. Grok membatalkan compaction setelah 300 detik per percobaan.     │
 │     ┌─────────────────────────────────────────────────────────────────┐     │
-│     │ ⚠️ CooperxMemory NOTICE: Context 90% reached                    │     │
+│     │ ⚠️ Context 85% (111.411 / 131.072)                              │     │
 │     │ Rencana + bukti tersimpan di `docs/plans/<slug>.md`            │     │
 │     │                                                                 │     │
 │     │ 💡 UNTUK MELANJUTKAN DENGAN CONTEXT BERSIH (0 TOKEN):           │     │
@@ -167,6 +169,6 @@ Terinspirasi dari arsitektur memori **Claude Code** (`CLAUDE.md` memory ledger) 
 | [`server-optimize.sh`](server-optimize.sh) | **Salinan referensi** runner `CooperxCompute`. Runner produksi sebenarnya: `/home/gspe-ai1/llama.cpp/build/bin/run-qwen.sh` di bawah systemd `llamacpp.service`. |
 | [`setup.sh`](setup.sh) | Onboarding 1-Click Linux & macOS (`CooperxHarness`) |
 | [`setup.ps1`](setup.ps1) | Onboarding 1-Click Windows PowerShell (`CooperxHarness`) |
-| [`config.default.toml`](config.default.toml) | Konfigurasi default 256K Context Window |
+| [`config.default.toml`](config.default.toml) | Konfigurasi klien: context 131.072, ambang compaction 85%, memory aktif |
 | [`.agents/rules/05-context-discipline.md`](.agents/rules/05-context-discipline.md) | Ambang context, penghematan token, protokol handover |
 | [`dashboard/`](dashboard/) | Web Telemetry Dashboard & API Gateway (`CooperxTelemetry`) |

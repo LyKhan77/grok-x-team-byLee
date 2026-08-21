@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-08-21 — Selaraskan seluruh dokumentasi dengan konfigurasi live
+
+**Konteks**  Audit menemukan `README.md` dan `ARCHITECTURE.md` — dua dokumen
+yang pertama dibaca orang baru — masih menggambarkan konfigurasi yang sudah
+tidak berlaku sejak beberapa perubahan terakhir.
+
+**Perubahan**
+- `README.md` — "4 Slots × 128K (524.288), KV q4_0, target 4 × 256K" →
+  **3 slot × 128K (393.216), KV q8_0, DFLASH 2 aktif, VRAM 75,3%**.
+  Label model "Dedicated 256K" → "128K Dedicated". Ambang 90% → 85%.
+- `ARCHITECTURE.md` — §3.2 diperbarui; drafter dikoreksi dari
+  `Qwen2.5-Coder-0.5B` (sudah lama diganti) ke `Qwen3.8-27B-DFlash2-Q4_K_M`;
+  VRAM diganti dari proyeksi lama ke angka terukur; ambang 90% → 85% dengan
+  catatan batas 300 detik.
+- `AGENTS.md` — komentar template config 256K → 131.072.
+- `docs/plans/*.md` (5 berkas) — diberi banner **DOKUMEN HISTORIS** dengan
+  ringkasan konfigurasi live, agar rencana lama tidak terbaca sebagai keadaan
+  sekarang.
+
+**Bukti**
+- Audit otomatis terhadap pola `524288`, `688128`, `172032`, `4 slot`, `256K`,
+  `q4_0`, `90%` pada seluruh dokumen aktif: bersih.
+- Satu rujukan "4 slot" yang tersisa di `AGENTS.md:240` memang benar — kalimat
+  itu menjelaskan sejarah mengapa compaction dulu lambat.
+
+**Dampak**  Dokumen yang menggambarkan keadaan sekarang tidak lagi bertentangan
+dengan server. Rencana lama tetap tersimpan sebagai catatan sejarah, bukan
+dihapus — tetapi kini jelas ditandai.
+
+**Rollback**  `git revert <commit>`.
+
+
 ### 2026-08-21 — Hapus memori sesi dari repo; pindahkan gerbang ke CHANGELOG
 
 **Konteks**  State per-sesi disimpan ganda: Grok CLI sudah menyimpannya di
