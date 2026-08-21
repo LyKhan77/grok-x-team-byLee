@@ -438,3 +438,39 @@ Seluruh berkas onboarding + harness diselaraskan ke 168K/172.032.
 - /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
 - /home/gspe-ai1/project/gspexgrok-agent/.agents/rules/05-cooperx-memory.md
 - /home/gspe-ai1/project/gspexgrok-agent/docs/harness_scope.md
+
+### Riset compaction: BUKTI LANGSUNG dari checkpoint (2026-08-21)
+
+Ditemukan berkas nyata:
+~/.grok/sessions/<proj>/<uuid>/compaction_checkpoints/<id>.json
+Isinya: checkpoint_id, prompt_index_at_compaction, compacted_history[],
+schema_version, created_at, original_user_info, reread_file_paths.
+
+UKURAN RINGKASAN TERUKUR: 12.119 char = 3.463 token.
+Riwayat setelah compaction total 5.786 token (system 1.729 + user_info 574 +
+query 19 + ringkasan 3.463).
+
+Aritmetika yang menutup kasus 15-20 menit:
+  3.463 token / 3,9 TPS (4 slot lama) = 888 s = 14,8 menit  <- COCOK
+  3.463 token / 41,5 TPS (sekarang)   =  83 s =  1,4 menit
+
+Jadi compaction TIDAK PERNAH lambat karena ukurannya; lambat karena TPS runtuh.
+Sudah teratasi oleh perubahan 3-slot, tanpa menyentuh compaction.
+
+KOREKSI jawaban saya sebelumnya: generasi 12.288 token yang saya duga compaction
+ternyata BUKAN — compaction hanya ~3.463 token.
+
+Ukuran ringkasan TIDAK DAPAT DIKONFIGURASI. Terkonfirmasi 3 cara: README lokal
+([session] hanya punya 2 kunci), referensi TOML resmi xAI ("No configuration key
+exists that controls the compaction summary length"), dan template internal yang
+terlihat di checkpoint. Ini sepenuhnya sisi Grok CLI — llama.cpp tidak punya
+konsep percakapan.
+
+VRAM SETELAH DEPLOY 168K: 62.005 MiB = 84,1%, bukan 80,8% seperti prediksi saya.
+base TUMBUH 2.408 MiB saat ctx/slot naik (compute buffer). Dengan base terkoreksi
+44.869 MiB: 176K -> 85,2%, 186K -> 86,6%. 186K TIDAK LAYAK. Pertanyaan tertutup.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/.grok/skills/long-task/SKILL.md (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/docs/plans/_TEMPLATE.md (baru)
+- /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md

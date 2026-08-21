@@ -97,6 +97,7 @@ gspexgrok-agent/
 ├── .grok/skills/                        # 🔌 Slash command — DIBACA OTOMATIS oleh Grok
 │   ├── init-agent/SKILL.md              # /init-agent      — susun AGENTS.md dari repo
 │   ├── init-changelog/SKILL.md          # /init-changelog  — catatan checkpoint perubahan
+│   ├── long-task/SKILL.md               # /long-task       — kerja lintas sesi berbasis rencana
 │   ├── checkpoint/SKILL.md              # /checkpoint      — simpan state sesi
 │   └── standardization/SKILL.md         # /standardization — kuesioner standar proyek
 ```
@@ -171,7 +172,21 @@ Ambang 80% adalah jaring pengaman, bukan jadwal.
 Meringkas di tengah investigasi menghasilkan ringkasan tentang keadaan setengah
 jadi, dan sesi berikutnya mewarisi kebingungan itu.
 
-### 3. Ambang 80% (137.626 token) — handover, bukan auto-compact
+### 3. Task yang melewati satu context — rencana, bukan ingatan
+
+Untuk pekerjaan yang tidak selesai dalam satu sesi, **rencana hidup di berkas**:
+`docs/plans/<slug>.md` (template: `docs/plans/_TEMPLATE.md`). Panggil `/long-task`.
+
+Alurnya: baca rencana → **verifikasi klaim terakhir terhadap repository** →
+kerjakan SATU langkah → tempelkan bukti → commit → `/flush` → `/clear`.
+
+Repository dan hasil test adalah kebenaran; rencana hanya klaim. Langkah `[x]`
+yang tidak lolos verifikasi diturunkan ke `[~]` dan dikerjakan ulang.
+
+**Jangan `--resume` untuk melanjutkan task** — itu memuat ulang transkrip lama,
+mahal di prefill dan membawa kebingungan yang sudah selesai.
+
+### 4. Ambang 80% (137.626 token) — jaring pengaman
 
 | | nilai |
 | :--- | ---: |
@@ -180,9 +195,14 @@ jadi, dan sesi berikutnya mewarisi kebingungan itu.
 | Plafon keras | sedang diukur (fase 1) |
 | `max_tokens` | 12.288 |
 
-Di atas ~128.000 token throughput runtuh ke ~1,5 TPS, sehingga compaction yang
-dipicu di sana memakan waktu sangat lama dan berujung timeout. Handover +
-rehydration menelan ~1.500 token; inline compaction menelan menit.
+Auto-compact adalah **jaring pengaman, bukan tulang punggung**. Ia terpicu oleh
+ambang alih-alih batas tugas, sehingga meringkas keadaan setengah jadi apa pun
+yang kebetulan tertangkap. Templatenya internal dan panjangnya tidak dapat
+diatur — terukur ~3.463 token pada satu checkpoint nyata.
+
+Durasinya sendiri kini wajar (~1,4 menit pada throughput sekarang; dulu ~15 menit
+karena TPS runtuh saat 4 slot sibuk, bukan karena compaction-nya). Yang tetap
+tidak bisa diandalkan adalah *isinya*, bukan kecepatannya.
 
 **Jangan resume context lama** untuk melanjutkan tugas. Mulai sesi bersih lalu
 baca checkpoint — resume memaksa prefill 100K+ token yang menyumbang 72% beban
