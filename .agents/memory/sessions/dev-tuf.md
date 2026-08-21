@@ -474,3 +474,32 @@ base TUMBUH 2.408 MiB saat ctx/slot naik (compute buffer). Dengan base terkoreks
 - /home/gspe-ai1/project/gspexgrok-agent/.grok/skills/long-task/SKILL.md (baru)
 - /home/gspe-ai1/project/gspexgrok-agent/docs/plans/_TEMPLATE.md (baru)
 - /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
+
+### `/clear` TIDAK ADA di Grok — harness menyuruh perintah fiktif (2026-08-21)
+
+Daftar slash command Grok: /always-approve /compact /exit /feedback /flush
+/hooks-add /hooks-list /hooks-trust /load /memory /model /multiline /new
+/plugins /rewind /skills. Yang membersihkan context adalah **/new**, bukan
+/clear (itu perintah Claude Code). 11 rujukan di ARCHITECTURE.md, AGENTS.md,
+rules, template, dan docs sudah diperbaiki.
+
+`/flush` = "Save current session knowledge to memory now" -> MENYIMPAN, tidak
+membebaskan context. Menjalankannya sendirian saat context penuh tidak menolong.
+Pasangannya wajib: /flush lalu /new.
+
+Usul user "nonaktifkan auto-compact, notifikasi di 95%" tidak bisa dipakai apa
+adanya: 95% x 172.032 = 163.430 + max_tokens 12.288 = 175.718 > 172.032 ->
+OVERFLOW. Ambang maksimum mutlak 92,9%, dan itu menyisakan 1.475 token untuk
+pesan user + hasil tool. Notifikasi di 95% datang setelah terlambat.
+
+Hook yang tersedia: PreToolUse/PostToolUse dan session start/end di .grok/hooks/
+atau [[hooks.<Event>]] di config.toml. TIDAK ada event ambang context.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/AGENTS.md
+- /home/gspe-ai1/project/gspexgrok-agent/ARCHITECTURE.md
+- /home/gspe-ai1/project/gspexgrok-agent/.agents/rules/05-cooperx-memory.md
+- /home/gspe-ai1/project/gspexgrok-agent/.agents/memory/session_state.template.md
+- /home/gspe-ai1/project/gspexgrok-agent/.grok/skills/long-task/SKILL.md
+- /home/gspe-ai1/project/gspexgrok-agent/docs/plans/cooperagent_master_plan.md
+- /home/gspe-ai1/project/gspexgrok-agent/docs/plans/long_task_horizon.md

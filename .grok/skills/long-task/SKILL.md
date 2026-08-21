@@ -1,6 +1,6 @@
 ---
 name: long-task
-description: Mulai atau lanjutkan pekerjaan panjang yang melewati batas satu context. Pakai saat memulai task berhari-hari, saat melanjutkan setelah /clear atau compaction, atau saat sebuah rencana harus bertahan lintas sesi.
+description: Mulai atau lanjutkan pekerjaan panjang yang melewati batas satu context. Pakai saat memulai task berhari-hari, saat melanjutkan setelah /new atau compaction, atau saat sebuah rencana harus bertahan lintas sesi.
 ---
 
 # long-task
@@ -10,7 +10,7 @@ description: Mulai atau lanjutkan pekerjaan panjang yang melewati batas satu con
 ## Prinsip
 
 **Rencana hidup di berkas, bukan di context.** Context adalah buffer kerja yang
-akan hilang — oleh `/clear`, oleh compaction, oleh restart. Yang bertahan hanya
+akan hilang — oleh `/new`, oleh compaction, oleh restart. Yang bertahan hanya
 apa yang tertulis di disk dan ter-commit.
 
 Sesi tidak "mengingat" rencana. Sesi **membaca** rencana, memajukan satu langkah,
@@ -43,7 +43,7 @@ berkas rencana.
 4. Commit berkas rencana **sebelum** mulai bekerja. Rencana yang belum ter-commit
    akan hilang bersama sesinya.
 
-## Melanjutkan (sesi baru setelah /clear)
+## Melanjutkan (sesi baru setelah /new)
 
 Jalankan urutan ini sebelum menyentuh kode apa pun:
 
@@ -78,7 +78,7 @@ Kerjakan **satu langkah**, bukan seluruh rencana. Setelah langkah itu terbukti:
 4. Commit berkas rencana bersama perubahan kodenya.
 5. `/flush` — menulis ringkasan sesi ke memory Grok, dicari otomatis pada
    giliran pertama sesi berikutnya.
-6. `/clear`, lalu mulai sesi baru dari langkah "Melanjutkan" di atas.
+6. `/new`, lalu mulai sesi baru dari langkah "Melanjutkan" di atas.
 
 **Jangan `--resume` untuk melanjutkan task.** Resume memuat ulang transkrip lama:
 mahal di prefill, dan membawa serta kebingungan yang sudah diselesaikan. Mulai

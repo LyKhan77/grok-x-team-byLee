@@ -35,5 +35,5 @@
 
 ## 5. Handover Instruction
 Untuk melanjutkan pengerjaan sesi ini pada terminal baru:
-1. Jalankan perintah `/clear`.
+1. Jalankan perintah `/new`.
 2. Ketik: `Lanjutkan session_state.md`.

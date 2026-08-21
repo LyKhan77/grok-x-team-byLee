@@ -122,7 +122,7 @@ Terinspirasi dari arsitektur memori **Claude Code** (`CLAUDE.md` memory ledger) 
 │     │ State kerja tersimpan aman di `.agents/memory/session_state.md`│     │
 │     │                                                                 │     │
 │     │ 💡 UNTUK MELANJUTKAN DENGAN CONTEXT BERSIH (0 TOKEN):           │     │
-│     │ 1. Ketik `/clear` di terminal agent                             │     │
+│     │ 1. Ketik `/new` di terminal agent                             │     │
 │     │ 2. Ketik `Lanjutkan session_state.md`                           │     │
 │     └─────────────────────────────────────────────────────────────────┘     │
 │                               │                                             │

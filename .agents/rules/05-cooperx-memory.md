@@ -137,7 +137,7 @@ Ketika context mencapai **80%** (137.626 token) atau developer meminta ringkasan
 │ 🚧 Blocker      : [Blockers, atau "(tidak ada)"]                            │
 │                                                                             │
 │ 💡 LANJUTKAN DENGAN CONTEXT BERSIH (~1 detik, bukan ~4,5 menit):            │
-│    1. Ketik `/clear`                                                        │
+│    1. Ketik `/new`                                                        │
 │    2. Ketik: "Lanjutkan session_state.md"                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```

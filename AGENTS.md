@@ -163,7 +163,7 @@ Pada tiap batas tugas — milestone berpindah ke `[x]`, bug terverifikasi selesa
 atau keputusan arsitektural diambil — lakukan **dua** hal, berapa pun context saat itu:
 
 1. `/flush` — menulis ringkasan sesi ke memory Grok. Ringkasan ini dicari
-   **otomatis pada giliran pertama sesi berikutnya**, sehingga setelah `/clear`
+   **otomatis pada giliran pertama sesi berikutnya**, sehingga setelah `/new`
    agent tetap mengingat intinya. Sifatnya lokal per mesin.
 2. Perbarui `sessions/<dev-id>.md` — state yang terbagi ke tim lewat git.
 
@@ -178,13 +178,26 @@ Untuk pekerjaan yang tidak selesai dalam satu sesi, **rencana hidup di berkas**:
 `docs/plans/<slug>.md` (template: `docs/plans/_TEMPLATE.md`). Panggil `/long-task`.
 
 Alurnya: baca rencana → **verifikasi klaim terakhir terhadap repository** →
-kerjakan SATU langkah → tempelkan bukti → commit → `/flush` → `/clear`.
+kerjakan SATU langkah → tempelkan bukti → commit → `/flush` → `/new`.
 
 Repository dan hasil test adalah kebenaran; rencana hanya klaim. Langkah `[x]`
 yang tidak lolos verifikasi diturunkan ke `[~]` dan dikerjakan ulang.
 
 **Jangan `--resume` untuk melanjutkan task** — itu memuat ulang transkrip lama,
 mahal di prefill dan membawa kebingungan yang sudah selesai.
+
+### 3b. Ritual tiga perintah
+
+```
+selesai satu langkah  ->  /flush  ->  /new  ->  "lanjutkan <rencana>"
+```
+
+`/flush` **menyimpan**, tidak membebaskan context. `/new` yang membebaskan.
+Menjalankan `/flush` sendirian saat context penuh tidak menolong sama sekali —
+pengetahuannya tersimpan, tetapi ruangnya tetap habis.
+
+Pemicunya **batas tugas, bukan persentase.** Pemicu berbasis persentase selalu
+menangkap keadaan setengah jadi; batas tugas menghasilkan checkpoint bersih.
 
 ### 4. Ambang 80% (137.626 token) — jaring pengaman
 

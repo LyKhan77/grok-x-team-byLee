@@ -34,7 +34,7 @@ Fitur yang sudah ada dan tidak kita pakai:
 | `memory_search` / `memory_get` | Agent dapat mencari sesi lampau — inilah "memilih sesi mana" |
 | `grok --resume <ID_ATAU_JUDUL>` | Melanjutkan sesi tertentu; `-c` melanjutkan yang terakhir |
 
-Ini menjawab permintaan "setelah `/clear` agent masih ingat inti sesi sebelumnya"
+Ini menjawab permintaan "setelah `/new` agent masih ingat inti sesi sebelumnya"
 tanpa membangun apa pun — cukup dinyalakan.
 
 Catatan privasi: auto-save **tidak** merekam perintah shell (sering memuat token/
