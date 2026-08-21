@@ -575,3 +575,26 @@ REKOMENDASI: rollback ke 131K via scripts/cooperx_apply_ctx168k.sh --rollback
 
 ## Files Modified
 - (tidak ada perubahan kode; temuan pengukuran)
+
+### Estimasi keberhasilan compaction pasca-rollback (2026-08-21)
+
+Model yang benar: compaction butuh RATA-RATA >=11,4 TPS selama jendela 300 detik,
+bukan sampel sesaat. Jendela bergulir 300s (langkah 30s):
+
+  ctx 131K: 1 slot 0,0% gagal | 2 slot 0,0% | 3 slot 1,4% (n=207)
+  ctx 168K: 1 slot 0,0%       | 2 slot 0,0% | 3 slot 29,2% (n=24)
+
+Pada 131K/3 slot: keberhasilan 98,6%, batas bawah CI 95% = 96,9%.
+
+SENSITIVITAS TAJAM terhadap panjang ringkasan (n=207 jendela):
+  3.422 token (terukur) -> 98,6% berhasil
+  4.000 token           -> 77,3%
+  5.000 token           -> 33,3%
+  6.000 token           -> 6,8%
+Keyakinan bersandar pada SATU observasi panjang ringkasan (3.422 token).
+
+Audit historis (scripts/compaction_audit.sh): 4 permintaan, hanya 1 berhasil
+(25%); 11 dari 12 percobaan gagal (92%). Semua pada konfigurasi 4-slot lama.
+
+## Files Modified
+- /home/gspe-ai1/project/gspexgrok-agent/scripts/compaction_audit.sh (baru)
